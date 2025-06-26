@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1095576233465",
+    "project_id": "comeback-1f112",
+    "storage_bucket": "comeback-1f112.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1095576233465:android:2dc730186d36f3c6104928",
+        "android_client_info": {
+          "package_name": "com.example.come_back"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtDFuI_nLrprPD9aQwamTJpOtWV40Rfcw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
