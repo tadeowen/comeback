@@ -7,7 +7,7 @@ import 'features/home/home_screen.dart';
 import 'features/chat/chat_screen.dart';
 import 'features/media/media_screen.dart';
 import 'features/profile/profile_screen.dart';
-import 'features/prayer/prayer_screen.dart'; // Make sure this exists
+import 'features/prayer/prayer_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +27,7 @@ class _ComebackState extends State<Comeback> {
 
   final List<Widget> _screens = [
     HomeScreen(),
-    PrayerScreen(), // Make sure you have this screen implemented
+    PrayerScreen(),
     ChatScreen(),
     MediaScreen(),
     ProfileScreen(),
