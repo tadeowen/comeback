@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
-import 'core/theme.dart';
-import 'widgets/custom_bottom_nav.dart';
-import 'features/home/home_screen.dart';
-import 'features/chat/chat_screen.dart';
+
+// Screens
+import 'features/home/home_screen.dart' as home;
+import 'features/chat/chat_screen.dart' as chat;
 import 'features/media/media_screen.dart';
 import 'features/profile/profile_screen.dart';
 import 'features/prayer/prayer_screen.dart';
+
+// UI & Theme
+import 'widgets/custom_bottom_nav.dart';
+import 'core/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,9 +30,9 @@ class _ComebackState extends State<Comeback> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    HomeScreen(),
+    home.HomeScreen(),
     PrayerScreen(),
-    ChatScreen(),
+    chat.ChatScreen(),
     MediaScreen(),
     ProfileScreen(),
   ];
@@ -43,7 +47,7 @@ class _ComebackState extends State<Comeback> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Come back',
-      theme: appTheme,
+      theme: ThemeData.light(),
       home: Scaffold(
         body: _screens[_selectedIndex],
         bottomNavigationBar: CustomBottomNav(
