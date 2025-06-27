@@ -85,4 +85,5 @@ class DefaultFirebaseOptions {
     storageBucket: 'comeback-1f112.firebasestorage.app',
     measurementId: 'G-K6L6H3ZN6E',
   );
+
 }
