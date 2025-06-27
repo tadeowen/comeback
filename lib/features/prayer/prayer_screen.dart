@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 
-class HomeScreen extends StatelessWidget {
+class PrayerScreen extends StatelessWidget {
+  const PrayerScreen({super.key});
+
   @override
-  Widget build(BuildContext context)
-  {
+  Widget build(BuildContext context) {
     return Center(
       child: Text(
         'Prayer Screen',
         style: Theme.of(context).textTheme.headline4,
-
       ),
     );
   }
 }
 
 extension on TextTheme {
-  get headline4 => null;
+  Null get headline4 => null;
 }
