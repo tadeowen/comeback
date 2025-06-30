@@ -9,7 +9,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Welcome'),
+        title: const Text('Greetings'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Welcome to Comeback!',
+              'A warm Welcome!',
               style: theme.headline4?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
@@ -47,7 +47,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              '• Sunday service at 10 AM\n'
+              '• Sunday services from 7:00am, 9:00am and 11;00 AM\n'
               '• Youth fellowship on Friday at 7 PM',
             ),
 
@@ -60,7 +60,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              '• Community outreach - July 10\n'
+              '• Community outreach - July 5th\n'
               '• Bible study retreat - August 5',
             ),
           ],
