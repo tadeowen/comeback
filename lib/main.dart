@@ -11,7 +11,6 @@ import 'features/prayer/prayer_screen.dart';
 
 // UI & Theme
 import 'widgets/custom_bottom_nav.dart';
-import 'core/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
