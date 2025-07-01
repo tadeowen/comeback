@@ -91,7 +91,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
           children: [
             Text(
               'Submit Your Prayer Request',
-              style: theme.headline5?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -128,12 +128,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
                   children: [
                     Text(
                       'Your prayer has been scheduled for:',
-                      style: theme.subtitle1,
+                      style: theme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _assignedDay!,
-                      style: theme.headline6?.copyWith(
+                      style: theme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.green.shade700,
                       ),
@@ -141,12 +141,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Your Confirmation Code:',
-                      style: theme.subtitle1,
+                      style: theme.titleMedium,
                     ),
                     const SizedBox(height: 8),
                     Text(
                       _confirmationCode!,
-                      style: theme.headline5?.copyWith(
+                      style: theme.headlineSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                         letterSpacing: 2,
                         color: Colors.green.shade900,

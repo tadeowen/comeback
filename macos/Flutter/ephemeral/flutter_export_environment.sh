@@ -1,7 +1,7 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=C:\Users\User\Desktop\flutter\flutter"
-export "FLUTTER_APPLICATION_PATH=C:\Users\User\Desktop\2400724224\come_back"
+export "FLUTTER_ROOT=C:\Users\Matrix Computer Accs\Desktop\Flutter\scr\flutter"
+export "FLUTTER_APPLICATION_PATH=C:\Users\Flutter_projects\come_back\comeback"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_BUILD_DIR=build"
 export "FLUTTER_BUILD_NAME=1.0.0"

@@ -14,13 +14,13 @@ class ChatScreen extends StatelessWidget {
         children: [
           Text(
             'Chat Screen',
-            style: Theme.of(context).textTheme.headline4,
+            style: Theme.of(context).textTheme.headlineMedium,
           ),
           const SizedBox(height: 16),
           if (user != null)
             Text(
               'Anonymous UID: ${user.uid}',
-              style: Theme.of(context).textTheme.bodyText1,
+              style: Theme.of(context).textTheme.bodyLarge,
             )
           else
             const Text('No user signed in'),

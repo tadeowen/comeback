@@ -18,7 +18,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Text(
               'A warm Welcome!',
-              style: theme.headline4?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
 
@@ -43,7 +43,7 @@ class HomeScreen extends StatelessWidget {
             // News Section
             Text(
               'Church News',
-              style: theme.headline6?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -56,7 +56,7 @@ class HomeScreen extends StatelessWidget {
             // Upcoming Events Section
             Text(
               'Upcoming Events',
-              style: theme.headline6?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(

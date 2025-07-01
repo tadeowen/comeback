@@ -8,9 +8,7 @@ class MediaScreen extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Media'),
-      ),
+      appBar: AppBar(title: const Text('Media')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -34,8 +32,9 @@ class MediaScreen extends StatelessWidget {
                   // Gospel Music
                   Text(
                     'Gospel Music',
-                    style:
-                        theme.headline6?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _buildMediaTile(
@@ -54,8 +53,9 @@ class MediaScreen extends StatelessWidget {
                   // Gospel Videos
                   Text(
                     'Gospel Videos',
-                    style:
-                        theme.headline6?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _buildMediaTile(
@@ -74,8 +74,9 @@ class MediaScreen extends StatelessWidget {
                   // News
                   Text(
                     'Latest News',
-                    style:
-                        theme.headline6?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _buildMediaTile(

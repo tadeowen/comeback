@@ -75,7 +75,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1095576233465',
     projectId: 'comeback-1f112',
     authDomain: 'comeback-1f112.firebaseapp.com',
-    storageBucket: 'comeback-1f112.appspot.com',
+    storageBucket: 'comeback-1f112.firebasestorage.app',
     measurementId: 'G-K6L6H3ZN6E',
   );
+
 }

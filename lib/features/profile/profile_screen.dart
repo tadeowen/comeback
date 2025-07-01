@@ -112,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   photoUrl == null ? const Icon(Icons.person, size: 50) : null,
             ),
             const SizedBox(height: 16),
-            Text(name, style: theme.headline5),
+            Text(name, style: theme.headlineSmall),
             Text(email),
             Text('Age: $age'),
             const SizedBox(height: 16),
@@ -126,7 +126,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Pending Appointments',
-                style: theme.headline6?.copyWith(fontWeight: FontWeight.bold),
+                style: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 8),
