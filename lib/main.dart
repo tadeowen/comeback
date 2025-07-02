@@ -13,19 +13,25 @@ import 'features/profile/profile_screen.dart';
 // Theme
 import 'core/theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Avoid duplicate initialization during hot reload/restart
-  if (Firebase.apps.isEmpty) {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-  }
+  try {
+    // ✅ Check if Firebase is already initialized
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
 
-  // Anonymous sign-in only if no user is signed in
-  if (FirebaseAuth.instance.currentUser == null) {
-    await FirebaseAuth.instance.signInAnonymously();
+    // ✅ Safe anonymous login
+    final auth = FirebaseAuth.instance;
+    if (auth.currentUser == null) {
+      await auth.signInAnonymously();
+    }
+  } catch (e, stack) {
+    debugPrint("❌ Firebase init or auth failed: $e");
+    debugPrintStack(stackTrace: stack);
   }
 
   runApp(const ComebackApp());
