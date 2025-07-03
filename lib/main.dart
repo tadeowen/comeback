@@ -8,6 +8,7 @@ import 'features/home/home_screen.dart';
 import 'features/media/media_screen.dart';
 import 'features/prayer/prayer_screen.dart';
 import 'features/chat/chat_screen.dart';
+import 'features/login/login.dart';
 import 'features/profile/profile_screen.dart';
 
 // Theme
@@ -17,20 +18,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // ✅ Check if Firebase is already initialized
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-
-    // ✅ Safe anonymous login
-    final auth = FirebaseAuth.instance;
-    if (auth.currentUser == null) {
-      await auth.signInAnonymously();
-    }
   } catch (e, stack) {
-    debugPrint("❌ Firebase init or auth failed: $e");
+    debugPrint("❌ Firebase init failed: $e");
     debugPrintStack(stackTrace: stack);
   }
 
@@ -46,7 +40,10 @@ class ComebackApp extends StatelessWidget {
       title: 'Comeback',
       debugShowCheckedModeBanner: false,
       theme: appTheme,
-      home: const MainNavigation(),
+      // ✅ Show login if no user, else show main screen
+      home: FirebaseAuth.instance.currentUser == null
+          ? const LoginScreen()
+          : const MainNavigation(),
     );
   }
 }
