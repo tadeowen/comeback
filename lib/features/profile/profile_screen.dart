@@ -15,7 +15,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   User? _user;
   DocumentSnapshot? _profileData;
-
   bool _loading = true;
 
   @override
@@ -38,7 +37,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _signOut() async {
     await _auth.signOut();
-    // TODO: Navigate back to login screen.
+    // TODO: Navigate back to login screen after sign out.
   }
 
   void _editProfile() async {
@@ -47,7 +46,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => AlertDialog(
         title: const Text('Confirm Edit'),
         content: const Text(
-            'Are you sure you want to edit your profile? You may need to verify your identity.'),
+          'Are you sure you want to edit your profile? You may need to verify your identity.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -84,12 +84,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    final name = _profileData?['name'] ?? 'No name';
-    final email = _user?.email ?? 'No email';
-    final age = _profileData?['age'] ?? 'Unknown';
-    final photoUrl = _profileData?['photoUrl'];
+    final data = _profileData?.data() as Map<String, dynamic>? ?? {};
 
-    final appointments = _profileData?['appointments'] as List<dynamic>?;
+    final name = data['name'] ?? 'No name';
+    final age = data['age'] ?? 'Unknown';
+    final religion = data['religion'] ?? 'Unknown';
+    final photoUrl = data['photoUrl'];
+    final prayerRequests = data['prayerRequests'] as List<dynamic>?;
 
     return Scaffold(
       appBar: AppBar(
@@ -106,15 +107,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: Column(
           children: [
             CircleAvatar(
-              radius: 50,
-              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-              child:
-                  photoUrl == null ? const Icon(Icons.person, size: 50) : null,
+              radius: 60,
+              backgroundImage: photoUrl != null && photoUrl.isNotEmpty
+                  ? NetworkImage(photoUrl)
+                  : const AssetImage('assets/images/placeholder_avatar.png')
+                      as ImageProvider,
             ),
             const SizedBox(height: 16),
             Text(name, style: theme.headlineSmall),
-            Text(email),
             Text('Age: $age'),
+            Text('Religion: $religion'),
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _editProfile,
@@ -125,21 +127,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Pending Appointments',
+                'Your Prayer Requests',
                 style: theme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 8),
-            if (appointments != null && appointments.isNotEmpty)
-              ...appointments.map(
-                (a) => ListTile(
-                  leading: const Icon(Icons.event_note),
-                  title: Text('Day: ${a['day']}'),
-                  subtitle: Text('Code: ${a['code']}'),
+            if (prayerRequests != null && prayerRequests.isNotEmpty)
+              ...prayerRequests.map(
+                (p) => Card(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListTile(
+                    leading: const Icon(Icons.favorite),
+                    title: Text(p['request'] ?? 'No details'),
+                    subtitle:
+                        Text('Scheduled on: ${p['scheduledDay'] ?? 'TBD'}'),
+                  ),
                 ),
               )
             else
-              const Text('No pending appointments'),
+              const Text('No prayer requests yet.'),
           ],
         ),
       ),
@@ -171,9 +177,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.initialData['name']);
+    final data = widget.initialData.data() as Map<String, dynamic>? ?? {};
+    _nameController = TextEditingController(text: data['name'] ?? '');
     _ageController =
-        TextEditingController(text: widget.initialData['age'].toString());
+        TextEditingController(text: (data['age'] ?? '').toString());
   }
 
   Future<void> _save() async {
