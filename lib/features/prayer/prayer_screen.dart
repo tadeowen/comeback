@@ -116,7 +116,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
               onPressed: _processRequest,
               child: const Text('Submit Request'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
             if (_assignedDay != null && _confirmationCode != null)
               Container(
                 padding: const EdgeInsets.all(16),
