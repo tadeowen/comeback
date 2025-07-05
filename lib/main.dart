@@ -39,10 +39,9 @@ class ComebackApp extends StatelessWidget {
     return MaterialApp(
       title: 'Comeback',
       debugShowCheckedModeBanner: false,
-      theme: appTheme,
-      // ✅ Show login if no user, else show main screen
+      theme: AppTheme.lightTheme,
       home: FirebaseAuth.instance.currentUser == null
-          ? const LoginScreen()
+          ? const Login()
           : const MainNavigation(),
     );
   }
@@ -59,7 +58,7 @@ class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = const [
-    HomeScreen(),
+    HomeScreen(studentName: 'User'), // Or pass actual name from auth profile
     MediaScreen(),
     PrayerScreen(),
     ChatScreen(),
@@ -83,26 +82,12 @@ class _MainNavigationState extends State<MainNavigation> {
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
         items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.library_music),
-            label: 'Media',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Prayer',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
+              icon: Icon(Icons.library_music), label: 'Media'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Prayer'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
     );

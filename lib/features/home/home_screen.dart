@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final String studentName;
+
+  const HomeScreen({super.key, required this.studentName});
 
   @override
   Widget build(BuildContext context) {
@@ -9,7 +11,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Greetings'),
+        title: Text('Welcome, $studentName!'), // 👈 Show student name here
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -17,8 +19,9 @@ class HomeScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'A warm Welcome!',
-              style: theme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              'A warm Welcome, $studentName!',
+              style:
+                  theme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
 
@@ -47,7 +50,7 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              '• Sunday services from 7:00am, 9:00am and 11;00 AM\n'
+              '• Sunday services from 7:00am, 9:00am and 11:00 AM\n'
               '• Youth fellowship on Friday at 7 PM',
             ),
 
