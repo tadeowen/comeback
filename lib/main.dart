@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // <-- add this import
 import 'firebase_options.dart';
 
 // Screens
@@ -56,14 +57,39 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+  String? studentName;
+  bool isLoading = true;
 
-  final List<Widget> _screens = const [
-    HomeScreen(studentName: 'User'), // Or pass actual name from auth profile
-    MediaScreen(),
-    PrayerScreen(),
-    ChatScreen(),
-    ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      try {
+        final doc =
+            await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        setState(() {
+          studentName = doc['name'] ?? 'User';
+          isLoading = false;
+        });
+      } catch (e) {
+        // If error, fallback to default name
+        setState(() {
+          studentName = 'User';
+          isLoading = false;
+        });
+      }
+    } else {
+      setState(() {
+        studentName = 'User';
+        isLoading = false;
+      });
+    }
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -73,8 +99,22 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final List<Widget> screens = [
+      HomeScreen(studentName: studentName ?? 'User'),
+      const MediaScreen(),
+      const PrayerScreen(),
+      const ChatScreen(),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

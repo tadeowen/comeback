@@ -29,7 +29,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/placeholder_avatar.png
+    - assets/images/
 
   
   # fonts:
