@@ -1,7 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import '../../main.dart'; // ✅ For MainNavigation
+import '../home/islam_home_screen.dart';
+import '../home/home_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   const LoginScreen({super.key});
@@ -35,7 +36,6 @@ class _LoginState extends State<Login> {
   bool _isLoading = false;
 
   final List<String> religions = ['Christianity', 'Islam'];
-
   Future<void> _registerOrLogin() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
@@ -54,47 +54,63 @@ class _LoginState extends State<Login> {
     });
 
     try {
-      //  Register or sign in with email & password
-      UserCredential userCred = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential userCred;
 
-      //  Store extra user info in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCred.user!.uid)
-          .set({
-        'name': name,
-        'email': email,
-        'religion': religion,
-        'createdAt': Timestamp.now(),
-      });
+      try {
+        // Register
+        userCred = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(email: email, password: password);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Welcome! Registration successful.')),
-      );
-
-      //  Navigate to main app
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigation()),
-      );
-    } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        // If user exists → sign in instead
-        UserCredential userCred = await FirebaseAuth.instance
-            .signInWithEmailAndPassword(email: email, password: password);
+        // Save user info to Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userCred.user!.uid)
+            .set({
+          'name': name,
+          'email': email,
+          'religion': religion,
+          'createdAt': Timestamp.now(),
+        });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Login successful!')),
+          const SnackBar(content: Text('Welcome! Registration successful.')),
         );
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          // Login instead
+          userCred = await FirebaseAuth.instance
+              .signInWithEmailAndPassword(email: email, password: password);
 
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login successful!')),
+          );
+        } else {
+          throw Exception('Firebase error: ${e.message}');
+        }
+      }
+
+      // ✅ Fetch religion and name from Firestore
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final doc =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final userName = doc['name'];
+      final userReligion = doc['religion'];
+
+      // ✅ Redirect based on religion
+      if (userReligion == 'Christianity') {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const MainNavigation()),
+          MaterialPageRoute(builder: (_) => HomeScreen(studentName: userName)),
+        );
+      } else if (userReligion == 'Islam') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+              builder: (_) => IslamHomeScreen(studentName: userName)),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.message}')),
+          const SnackBar(content: Text('Unknown religion selected.')),
         );
       }
     } catch (e) {
