@@ -9,7 +9,8 @@ import 'features/home/home_screen.dart';
 import 'features/media/media_screen.dart';
 import 'features/prayer/prayer_screen.dart';
 import 'features/chat/chat_screen.dart';
-import 'features/login/login.dart';
+import 'features/login/login_screen.dart';
+import 'features/login/register_screen.dart';
 import 'features/profile/profile_screen.dart';
 
 // Theme
@@ -41,9 +42,11 @@ class ComebackApp extends StatelessWidget {
       title: 'Comeback',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: FirebaseAuth.instance.currentUser == null
-          ? const Login()
-          : const MainNavigation(),
+      initialRoute: '/login',
+      routes: {
+        '/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
+      },
     );
   }
 }
