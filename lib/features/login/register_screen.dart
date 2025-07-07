@@ -20,15 +20,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> _religions = ['Christianity', 'Islam'];
 
+  // Helper to validate email format
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
   Future<void> _register() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final religion = _selectedReligion;
 
+    // Basic validation with email format & password length checks
     if (name.isEmpty || email.isEmpty || password.isEmpty || religion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid email address')),
+      );
+      return;
+    }
+
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password must be at least 6 characters')),
       );
       return;
     }
@@ -68,7 +89,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (e.code == 'email-already-in-use') {
         message = 'Email already registered. Try logging in.';
       } else if (e.code == 'weak-password') {
-        message = 'Password is too weak.';
+        message = 'Password is too weak. Please choose a stronger one.';
+      } else if (e.code == 'invalid-email') {
+        message = 'The email address is badly formatted.';
       }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
@@ -96,6 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
+              keyboardType: TextInputType.emailAddress, // show email keyboard
               decoration: const InputDecoration(labelText: 'Email'),
             ),
             const SizedBox(height: 16),
@@ -126,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 12),
             TextButton(
               onPressed: () {
-                Navigator.pushReplacementNamed(context, '/login');
+                Navigator.pushReplacementNamed(context, '/');
               },
               child: const Text("Already have an account? Login"),
             ),
