@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../home/home_screen.dart';
-import '../home/islam_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,53 +14,48 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
 
+  bool isValidEmail(String email) {
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    return emailRegex.hasMatch(email);
+  }
+
   Future<void> _login() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both email and password')),
-      );
+      _showMessage('Please enter both email and password');
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      _showMessage('Please enter a valid email address');
       return;
     }
 
     setState(() => _isLoading = true);
 
     try {
+      // Sign in the user
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      final doc =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final name = doc['name'];
-      final religion = doc['religion'];
-
-      if (religion == 'Christianity') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)),
-        );
-      } else if (religion == 'Islam') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => IslamHomeScreen(studentName: name)),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Unknown religion.')),
-        );
-      }
+      // Navigate to main app with bottom nav
+      Navigator.pushReplacementNamed(context, '/');
+    } on FirebaseAuthException catch (e) {
+      _showMessage('Login failed: ${e.message}');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Login failed: $e')),
-      );
+      _showMessage('Unexpected error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

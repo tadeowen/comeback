@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // <-- add this import
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'firebase_options.dart';
 
 // Screens
@@ -12,6 +13,7 @@ import 'features/chat/chat_screen.dart';
 import 'features/login/login_screen.dart';
 import 'features/login/register_screen.dart';
 import 'features/profile/profile_screen.dart';
+import 'features/profile/edit_profile_screen.dart';
 
 // Theme
 import 'core/theme.dart';
@@ -42,10 +44,13 @@ class ComebackApp extends StatelessWidget {
       title: 'Comeback',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      initialRoute: '/login',
+      initialRoute: FirebaseAuth.instance.currentUser == null ? '/login' : '/',
       routes: {
+        '/': (_) => const MainNavigation(), // Root goes to MainNavigation
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
+        '/profile': (_) => const ProfileScreen(),
+        // EditProfileScreen should be pushed with arguments, not via routes
       },
     );
   }
@@ -80,7 +85,6 @@ class _MainNavigationState extends State<MainNavigation> {
           isLoading = false;
         });
       } catch (e) {
-        // If error, fallback to default name
         setState(() {
           studentName = 'User';
           isLoading = false;
