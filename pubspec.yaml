@@ -1,6 +1,6 @@
 name: comeback
-description: "A religious Flutter app for prayer requests, gospel media, chat and spiritual support."
-publish_to: 'none' # Remove to publish to pub.dev
+description: "A religious Flutter app for prayer requests, gospel media, chat, and spiritual support."
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -11,37 +11,34 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase core services
   firebase_core: ^3.14.0
   firebase_auth: ^5.6.0
   cloud_firestore: ^5.6.9
 
-  # Cupertino icons for iOS style icons
-  cupertino_icons: ^1.0.8
+  timezone: ^0.9.2
 
-  # Optional: Add these for better state management, animations, or UI improvements
-  provider: ^6.1.2 # For state management, if needed
-  flutter_spinkit: ^5.2.0 # For nice loading animations
-  google_fonts: ^6.2.0 # If you want custom fonts from Google
+  cupertino_icons: ^1.0.8
+  
+  provider: ^6.1.2
+  flutter_spinkit: ^5.2.0
+  google_fonts: ^6.2.0 # ✅ You can still keep this for future
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: 5.0.0
+  flutter_lints: ^3.0.0
 
 flutter:
   uses-material-design: true
 
   assets:
-    #- assets/images/
-    #- assets/videos/
-    #- assets/audio/
-    #- assets/json/
+    - assets/images/
 
-  # Example fonts section, if you plan to use custom fonts:
+  
   # fonts:
-  #   - family: Roboto
+  #   - family: Poppins
   #     fonts:
-  #       - asset: assets/fonts/Roboto-Regular.ttf
-  #       - asset: assets/fonts/Roboto-Bold.ttf
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #       - asset: assets/fonts/Poppins-Bold.ttf
   #         weight: 700

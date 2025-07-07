@@ -12,7 +12,7 @@ class AppTheme {
       secondary: lightGreen,
     ),
     appBarTheme: const AppBarTheme(
-      backgroundColor: primaryBrown,
+      backgroundColor: Color.fromARGB(255, 72, 112, 121),
       foregroundColor: Colors.white,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
