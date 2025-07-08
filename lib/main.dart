@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // <-- add this import
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+
 import 'firebase_options.dart';
 
 // Screens
@@ -9,11 +11,13 @@ import 'features/home/home_screen.dart';
 import 'features/media/media_screen.dart';
 import 'features/prayer/prayer_screen.dart';
 import 'features/chat/chat_screen.dart';
-import 'features/login/login.dart';
+import 'features/login/login_screen.dart';
+import 'features/login/register_screen.dart';
 import 'features/profile/profile_screen.dart';
 
 // Theme
 import 'core/theme.dart';
+import 'core/themeNotifier.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +33,12 @@ Future<void> main() async {
     debugPrintStack(stackTrace: stack);
   }
 
-  runApp(const ComebackApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: const ComebackApp(),
+    ),
+  );
 }
 
 class ComebackApp extends StatelessWidget {
@@ -37,13 +46,24 @@ class ComebackApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Comeback',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      home: FirebaseAuth.instance.currentUser == null
-          ? const Login()
-          : const MainNavigation(),
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, _) {
+        return MaterialApp(
+          title: 'Comeback',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: ThemeData.dark(),
+          themeMode: themeNotifier.themeMode,
+          initialRoute:
+              FirebaseAuth.instance.currentUser == null ? '/login' : '/',
+          routes: {
+            '/': (_) => const MainNavigation(),
+            '/login': (_) => const LoginScreen(),
+            '/register': (_) => const RegisterScreen(),
+            '/profile': (_) => const ProfileScreen(),
+          },
+        );
+      },
     );
   }
 }
@@ -77,7 +97,6 @@ class _MainNavigationState extends State<MainNavigation> {
           isLoading = false;
         });
       } catch (e) {
-        // If error, fallback to default name
         setState(() {
           studentName = 'User';
           isLoading = false;
