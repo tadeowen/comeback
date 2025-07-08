@@ -55,11 +55,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Firebase Auth registration
       final userCred = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      // Save user info to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCred.user!.uid)
@@ -70,7 +68,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': Timestamp.now(),
       });
 
-      // Navigate based on religion
       if (religion == 'Christianity') {
         Navigator.pushReplacement(
           context,
@@ -82,7 +79,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           MaterialPageRoute(builder: (_) => IslamHomeScreen(studentName: name)),
         );
       } else {
-        // fallback
         Navigator.pushReplacementNamed(context, '/');
       }
     } on FirebaseAuthException catch (e) {
@@ -121,49 +117,126 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    const Color backgroundColor = Color(0xFFFFF8E1); // soft golden
+    const Color appBarColor = Color(0xFF6A1B1A); // deep maroon
+    const Color inputBorderColor = Color(0xFFD2691E); // rusty orange
+    const Color buttonColor = Color(0xFFD2691E); // rusty orange
+    const Color textColor = Color(0xFF4B1D1D); // earthy dark
+    const Color labelColor = Color(0xFF5D4037); // warm brown
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: appBarColor,
+        title: const Text('Register', style: TextStyle(color: Colors.white)),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Full Name'),
+              style: const TextStyle(color: textColor),
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                labelStyle: const TextStyle(color: labelColor),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: inputBorderColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: appBarColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
+              style: const TextStyle(color: textColor),
+              decoration: InputDecoration(
+                labelText: 'Email',
+                labelStyle: const TextStyle(color: labelColor),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: inputBorderColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: appBarColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
+              style: const TextStyle(color: textColor),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                labelStyle: const TextStyle(color: labelColor),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: inputBorderColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: appBarColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedReligion,
+              dropdownColor: backgroundColor,
+              iconEnabledColor: inputBorderColor,
+              style: const TextStyle(color: textColor),
               items: _religions
-                  .map((religion) =>
-                      DropdownMenuItem(value: religion, child: Text(religion)))
+                  .map((religion) => DropdownMenuItem(
+                        value: religion,
+                        child: Text(religion),
+                      ))
                   .toList(),
               onChanged: (value) => setState(() => _selectedReligion = value),
-              decoration: const InputDecoration(labelText: 'Select Religion'),
+              decoration: InputDecoration(
+                labelText: 'Select Religion',
+                labelStyle: const TextStyle(color: labelColor),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: inputBorderColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: const BorderSide(color: appBarColor),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _register,
-              child: Text(_isLoading ? 'Registering...' : 'Register'),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _register,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: buttonColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+                child: Text(_isLoading ? 'Registering...' : 'Register'),
+              ),
             ),
             const SizedBox(height: 12),
             TextButton(
               onPressed: () {
                 Navigator.pushReplacementNamed(context, '/');
               },
-              child: const Text("Already have an account? Login"),
+              child: const Text(
+                "Already have an account? Login",
+                style: TextStyle(color: appBarColor),
+              ),
             ),
           ],
         ),
