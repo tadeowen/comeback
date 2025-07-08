@@ -20,7 +20,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> _religions = ['Christianity', 'Islam'];
 
-  // Helper to validate email format
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
@@ -32,7 +31,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = _passwordController.text.trim();
     final religion = _selectedReligion;
 
-    // Basic validation with email format & password length checks
     if (name.isEmpty || email.isEmpty || password.isEmpty || religion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
@@ -57,11 +55,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Register user
-      UserCredential userCred = await FirebaseAuth.instance
+      // Firebase Auth registration
+      final userCred = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      // Save to Firestore
+      // Save user info to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCred.user!.uid)
@@ -83,21 +81,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
           context,
           MaterialPageRoute(builder: (_) => IslamHomeScreen(studentName: name)),
         );
+      } else {
+        // fallback
+        Navigator.pushReplacementNamed(context, '/');
       }
     } on FirebaseAuthException catch (e) {
       String message = 'Registration failed';
-      if (e.code == 'email-already-in-use') {
-        message = 'Email already registered. Try logging in.';
-      } else if (e.code == 'weak-password') {
-        message = 'Password is too weak. Please choose a stronger one.';
-      } else if (e.code == 'invalid-email') {
-        message = 'The email address is badly formatted.';
+      debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+      switch (e.code) {
+        case 'email-already-in-use':
+          message = 'This email is already registered.';
+          break;
+        case 'invalid-email':
+          message = 'Invalid email address.';
+          break;
+        case 'weak-password':
+          message = 'Password is too weak.';
+          break;
+        case 'operation-not-allowed':
+          message = 'Email/password accounts are not enabled.';
+          break;
       }
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
-    } catch (e) {
+    } on FirebaseException catch (e) {
+      debugPrint('Firestore FirebaseException: ${e.code} - ${e.message}');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong: $e')),
+        SnackBar(content: Text('Database error: ${e.message}')),
+      );
+    } catch (e) {
+      debugPrint('General error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unexpected error: $e')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -119,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
-              keyboardType: TextInputType.emailAddress, // show email keyboard
+              keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
             const SizedBox(height: 16),
@@ -135,11 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   .map((religion) =>
                       DropdownMenuItem(value: religion, child: Text(religion)))
                   .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedReligion = value;
-                });
-              },
+              onChanged: (value) => setState(() => _selectedReligion = value),
               decoration: const InputDecoration(labelText: 'Select Religion'),
             ),
             const SizedBox(height: 24),

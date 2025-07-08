@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../home/home_screen.dart';
+import '../home/islam_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,13 +39,40 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       // Sign in the user
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      UserCredential userCred = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-      // Navigate to main app with bottom nav
-      Navigator.pushReplacementNamed(context, '/');
+      final userId = userCred.user!.uid;
+
+      // Fetch user's religion and name from Firestore
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!userDoc.exists) {
+        _showMessage('User data not found in database.');
+        return;
+      }
+
+      final userData = userDoc.data()!;
+      final String religion = userData['religion'] ?? '';
+      final String name = userData['name'] ?? '';
+
+      // Navigate to respective home screen
+      if (religion == 'Christianity') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)),
+        );
+      } else if (religion == 'Islam') {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => IslamHomeScreen(studentName: name)),
+        );
+      } else {
+        _showMessage('Invalid religion type. Please contact support.');
+      }
     } on FirebaseAuthException catch (e) {
       _showMessage('Login failed: ${e.message}');
     } catch (e) {

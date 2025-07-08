@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../media/quran_page.dart';
+import '../profile/islam_profile_screen.dart'; // Optional, in case profile is needed
 
 class IslamHomeScreen extends StatefulWidget {
   final String studentName;
@@ -13,13 +14,20 @@ class IslamHomeScreen extends StatefulWidget {
 class _IslamHomeScreenState extends State<IslamHomeScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = [
-    const PrayerAndAyahPage(),
-    const QuranPage(),
-    const Center(child: Text("🤲 Duas")),
-    const Center(child: Text("💡 Hadith")),
-    const Center(child: Text("⚙️ Settings")),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const PrayerAndAyahPage(),
+      const QuranPage(),
+      const Center(child: Text("🤲 Duas")),
+      const Center(child: Text("💡 Hadith")),
+      MuslimSettingsScreen(
+          studentName: widget.studentName), // ✅ Real settings screen
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
