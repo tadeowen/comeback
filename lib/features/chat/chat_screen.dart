@@ -94,7 +94,10 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFF8BC34A) : const Color(0xFF795548),
+          // 🌟 Updated background colors
+          color: isMe
+              ? const Color(0xFFD2691E) // warm rusty orange
+              : const Color(0xFF4B1D1D), // deep maroon/burgundy
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
@@ -110,14 +113,17 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
               data['sender'],
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
-                color: Colors.white70,
+                color: Color(0xFFF5F5F5), // light gray text
                 fontSize: 12,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               data['text'],
-              style: const TextStyle(color: Colors.white, fontSize: 16),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+              ),
             ),
           ],
         ),
@@ -134,7 +140,11 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Community Chat')),
+      backgroundColor: const Color(0xFFFFF8E1), // soft golden background
+      appBar: AppBar(
+        title: const Text('Community Chat'),
+        backgroundColor: const Color(0xFF6A1B1A), // deep maroon AppBar
+      ),
       body: Column(
         children: [
           Expanded(
@@ -179,7 +189,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            color: Colors.grey[200],
+            color: const Color(0xFFFFF3E0), // lighter warm background
             child: Row(
               children: [
                 Expanded(
@@ -202,7 +212,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(width: 8),
                 CircleAvatar(
-                  backgroundColor: const Color(0xFF8BC34A),
+                  backgroundColor: const Color(0xFFD2691E), // rusty orange send button
                   child: IconButton(
                     icon: const Icon(Icons.send, color: Colors.white),
                     onPressed: _sendMessage,
