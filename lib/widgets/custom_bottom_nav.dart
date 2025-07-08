@@ -20,9 +20,9 @@ class CustomBottomNav extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
         BottomNavigationBarItem(
           icon: Icon(Icons.self_improvement),
-          label: 'Prayer',
+          label: 'Prayer Request',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+        BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Forum'),
         BottomNavigationBarItem(
           icon: Icon(Icons.video_library),
           label: 'Media',
