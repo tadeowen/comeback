@@ -34,7 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     {"name": "Pr.Phaneroo", "image": "assets/images/pr3.jpg"},
     {"name": "Pr.Kayanja Robert", "image": "assets/images/pr4.jpg"},
     {"name": "Pr.Ssenyonga", "image": "assets/images/pr5.jpg"},
-    {"name": "Rev.Lydia Kitayimbwa", "image": "assets/images/pr6.jpg"}
+    {"name": "Rev.Lydia Kitayimbwa", "image": "assets/images/pr6.jpg"},
+    {"name": "Fr. Josephat Ddungu", "image": "assets/images/pr7.jpg"},
   ];
 
   final List<Map<String, String>> featuredPriests = [
