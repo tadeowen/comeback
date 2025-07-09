@@ -22,6 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _selectedReligion;
   String? _selectedRole;
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   final List<String> _religions = ['Christianity', 'Islam'];
   final List<String> _christianRoles = ['Student', 'Priest'];
@@ -195,10 +196,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   // Password
                   TextField(
                     controller: _passwordController,
-                    obscureText: true,
+                    obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _obscurePassword = !_obscurePassword;
+                          });
+                        },
+                      ),
                       border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10)),
                     ),
