@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -24,6 +25,7 @@ class _MuslimSettingsScreenState extends State<MuslimSettingsScreen> {
   bool _isSaving = false;
 
   File? _profileImage;
+  String? _profileImageUrl;
 
   @override
   void initState() {
@@ -42,6 +44,11 @@ class _MuslimSettingsScreenState extends State<MuslimSettingsScreen> {
     if (data != null) {
       _nameController.text = data['name'] ?? '';
       _notificationsEnabled = data['notify'] ?? false;
+
+      if (data['profileImage'] != null) {
+        _profileImageUrl = data['profileImage'];
+      }
+
       setState(() {});
     }
   }
@@ -113,9 +120,46 @@ class _MuslimSettingsScreenState extends State<MuslimSettingsScreen> {
       final pickedFile =
           await picker.pickImage(source: source, imageQuality: 70);
       if (pickedFile != null) {
-        setState(() {
-          _profileImage = File(pickedFile.path);
-        });
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId == null) return;
+
+        final file = File(pickedFile.path);
+        final ref =
+            FirebaseStorage.instance.ref().child('profile_images/$userId.jpg');
+
+        try {
+          // Upload the file
+          await ref.putFile(file);
+
+          // Optional: wait to ensure it's ready
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          // Get download URL
+          final downloadUrl = await ref.getDownloadURL();
+          final freshUrl =
+              "$downloadUrl?t=${DateTime.now().millisecondsSinceEpoch}";
+
+          // Save to Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .update({
+            'profileImage': freshUrl,
+          });
+
+          setState(() {
+            _profileImage = file;
+            _profileImageUrl = freshUrl;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Profile image updated')),
+          );
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload image: $e')),
+          );
+        }
       }
     }
   }
@@ -155,8 +199,11 @@ class _MuslimSettingsScreenState extends State<MuslimSettingsScreen> {
                   radius: 50,
                   backgroundImage: _profileImage != null
                       ? FileImage(_profileImage!)
-                      : const AssetImage('assets/images/placeholder_avatar.png')
-                          as ImageProvider,
+                      : (_profileImageUrl != null
+                          ? NetworkImage(_profileImageUrl!)
+                          : const AssetImage(
+                                  'assets/images/placeholder_avatar.png')
+                              as ImageProvider),
                   child: _profileImage == null
                       ? const Icon(Icons.camera_alt, size: 30)
                       : null,
