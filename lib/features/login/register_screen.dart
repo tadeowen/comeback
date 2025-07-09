@@ -208,10 +208,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../home/home_screen.dart';
 import '../home/islam_home_screen.dart';
 import '../home/priest_home_screen.dart';
-import '../home/imam_home_screen.dart'; // Make sure this file exists
+import '../home/imam_home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -224,6 +225,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   String? _selectedReligion;
   String? _selectedRole;
   bool _isLoading = false;
@@ -231,6 +233,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final List<String> _religions = ['Christianity', 'Islam'];
   final List<String> _christianRoles = ['Student', 'Priest'];
   final List<String> _islamRoles = ['Student', 'Imam'];
+
+  List<String> get _currentRoles {
+    if (_selectedReligion == 'Christianity') return _christianRoles;
+    if (_selectedReligion == 'Islam') return _islamRoles;
+    return [];
+  }
 
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -257,7 +265,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!_isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email address')),
+        const SnackBar(content: Text('Please enter a valid email')),
       );
       return;
     }
@@ -272,8 +280,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userCred = await FirebaseAuth.instance
-          .createUserWithEmailAndPassword(email: email, password: password);
+      final userCred =
+          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       await FirebaseFirestore.instance
           .collection('users')
@@ -286,139 +297,194 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': Timestamp.now(),
       });
 
-      // Navigate based on religion and role
       if (religion == 'Christianity') {
         if (role == 'Student') {
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)));
+        } else {
           Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)),
-          );
-        } else if (role == 'Priest') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) => PriestHomeScreen(priestName: name)),
-          );
-        }
-      } else if (religion == 'Islam') {
-        if (role == 'Student') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) => IslamHomeScreen(studentName: name)),
-          );
-        } else if (role == 'Imam') {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => ImamHomeScreen(imamName: name)),
-          );
+              context,
+              MaterialPageRoute(
+                  builder: (_) => PriestHomeScreen(priestName: name)));
         }
       } else {
-        Navigator.pushReplacementNamed(context, '/');
+        if (role == 'Student') {
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => IslamHomeScreen(studentName: name)));
+        } else {
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => ImamHomeScreen(imamName: name)));
+        }
       }
     } on FirebaseAuthException catch (e) {
-      String message = 'Registration failed';
-      debugPrint('FirebaseAuthException: ${e.code} - ${e.message}');
+      String msg = 'Registration failed';
       switch (e.code) {
         case 'email-already-in-use':
-          message = 'This email is already registered.';
+          msg = 'Email already in use.';
           break;
         case 'invalid-email':
-          message = 'Invalid email address.';
+          msg = 'Invalid email.';
           break;
         case 'weak-password':
-          message = 'Password is too weak.';
-          break;
-        case 'operation-not-allowed':
-          message = 'Email/password accounts are not enabled.';
+          msg = 'Weak password.';
           break;
       }
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
-    } on FirebaseException catch (e) {
-      debugPrint('Firestore FirebaseException: ${e.code} - ${e.message}');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Database error: ${e.message}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
-      debugPrint('General error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unexpected error: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Unexpected error: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  List<String> get _currentRoles {
-    if (_selectedReligion == 'Christianity') return _christianRoles;
-    if (_selectedReligion == 'Islam') return _islamRoles;
-    return [];
-  }
-
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Register')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Full Name'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password'),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _selectedReligion,
-              items: _religions
-                  .map((religion) =>
-                      DropdownMenuItem(value: religion, child: Text(religion)))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedReligion = value;
-                  _selectedRole = null;
-                });
-              },
-              decoration: const InputDecoration(labelText: 'Select Religion'),
-            ),
-            const SizedBox(height: 16),
-            if (_selectedReligion != null)
-              DropdownButtonFormField<String>(
-                value: _selectedRole,
-                items: _currentRoles
-                    .map((role) =>
-                        DropdownMenuItem(value: role, child: Text(role)))
-                    .toList(),
-                onChanged: (value) => setState(() => _selectedRole = value),
-                decoration: const InputDecoration(labelText: 'Select Role'),
+      backgroundColor: Colors.purple.shade50,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Card(
+            elevation: 10,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Join the ComeBack Family',
+                    style: theme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '“And pray for one another...” – James 5:16',
+                    style: TextStyle(color: Colors.grey[600]),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Name
+                  TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Full Name',
+                      prefixIcon: const Icon(Icons.person),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Email
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      prefixIcon: const Icon(Icons.email),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Password
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      prefixIcon: const Icon(Icons.lock),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Religion dropdown
+                  DropdownButtonFormField<String>(
+                    value: _selectedReligion,
+                    decoration: InputDecoration(
+                      labelText: 'Select Religion',
+                      prefixIcon: const Icon(Icons.self_improvement),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: _religions.map((religion) {
+                      return DropdownMenuItem(
+                          value: religion, child: Text(religion));
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedReligion = value;
+                        _selectedRole = null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Role dropdown (based on religion)
+                  if (_selectedReligion != null)
+                    DropdownButtonFormField<String>(
+                      value: _selectedRole,
+                      decoration: InputDecoration(
+                        labelText: 'Select Role',
+                        prefixIcon: const Icon(Icons.emoji_people),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                      ),
+                      items: _currentRoles.map((role) {
+                        return DropdownMenuItem(value: role, child: Text(role));
+                      }).toList(),
+                      onChanged: (value) =>
+                          setState(() => _selectedRole = value),
+                    ),
+
+                  const SizedBox(height: 24),
+
+                  // Register Button
+                  ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _register,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : const Icon(Icons.check_circle),
+                    label: Text(_isLoading ? 'Registering...' : 'Register'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacementNamed(context, '/');
+                    },
+                    child: const Text('Already have an account? Login'),
+                  ),
+                ],
               ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _isLoading ? null : _register,
-              child: Text(_isLoading ? 'Registering...' : 'Register'),
             ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacementNamed(context, '/');
-              },
-              child: const Text("Already have an account? Login"),
-            ),
-          ],
+          ),
         ),
       ),
     );
