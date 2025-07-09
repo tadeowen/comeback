@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../home/home_screen.dart';
 import '../home/islam_home_screen.dart';
+import '../home/priest_home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,9 +17,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedReligion;
+  String? _selectedRole;
   bool _isLoading = false;
 
   final List<String> _religions = ['Christianity', 'Islam'];
+  final List<String> _roles = ['Student', 'Priest'];
 
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -30,8 +33,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final religion = _selectedReligion;
+    final role = _selectedRole;
 
-    if (name.isEmpty || email.isEmpty || password.isEmpty || religion == null) {
+    if (name.isEmpty ||
+        email.isEmpty ||
+        password.isEmpty ||
+        religion == null ||
+        (_selectedReligion == 'Christianity' && _selectedRole == null)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
       );
@@ -67,15 +75,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'name': name,
         'email': email,
         'religion': religion,
+        'role': role,
         'createdAt': Timestamp.now(),
       });
 
       // Navigate based on religion
       if (religion == 'Christianity') {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)),
-        );
+        if (_selectedRole == 'Student') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)),
+          );
+        } else if (_selectedRole == 'Priest') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (_) => PriestHomeScreen(priestName: name)),
+          );
+        }
       } else if (religion == 'Islam') {
         Navigator.pushReplacement(
           context,
@@ -150,9 +167,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   .map((religion) =>
                       DropdownMenuItem(value: religion, child: Text(religion)))
                   .toList(),
-              onChanged: (value) => setState(() => _selectedReligion = value),
+              onChanged: (value) {
+                setState(() {
+                  _selectedReligion = value;
+                  _selectedRole = null; // Reset role if religion changes
+                });
+              },
               decoration: const InputDecoration(labelText: 'Select Religion'),
             ),
+            const SizedBox(height: 16),
+            if (_selectedReligion == 'Christianity')
+              DropdownButtonFormField<String>(
+                value: _selectedRole,
+                items: _roles
+                    .map((role) =>
+                        DropdownMenuItem(value: role, child: Text(role)))
+                    .toList(),
+                onChanged: (value) => setState(() => _selectedRole = value),
+                decoration: const InputDecoration(labelText: 'Select Role'),
+              ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _isLoading ? null : _register,

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class PriestHomeScreen extends StatelessWidget {
   final String priestName;
-  const PriestHomeScreen({required this.priestName});
+  const PriestHomeScreen({super.key, required this.priestName});
 
   @override
   Widget build(BuildContext context) {

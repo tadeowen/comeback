@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -38,7 +37,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _signOut() async {
     await _auth.signOut();
-    // TODO: Navigate back to login screen after sign out.
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/login');
+    }
   }
 
   void _editProfile() async {
@@ -86,7 +87,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
 
     final data = _profileData?.data() as Map<String, dynamic>? ?? {};
-
     final name = data['name'] ?? 'No name';
     final age = data['age'] ?? 'Unknown';
     final religion = data['religion'] ?? 'Unknown';
@@ -158,127 +158,70 @@ class EditProfileScreen extends StatefulWidget {
   final String userId;
   final DocumentSnapshot initialData;
 
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'edit_profile_screen.dart';
-
-
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const EditProfileScreen({
+    super.key,
+    required this.userId,
+    required this.initialData,
+  });
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
-
-
-  bool _saving = false;
-
-  User? _user;
-  DocumentSnapshot? _profileData;
-  bool _loading = true;
-
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
+  late TextEditingController _ageController;
+  bool saving = false;
 
   @override
   void initState() {
     super.initState();
-
     final data = widget.initialData.data() as Map<String, dynamic>? ?? {};
     _nameController = TextEditingController(text: data['name'] ?? '');
     _ageController =
         TextEditingController(text: (data['age'] ?? '').toString());
-    _loadProfile();
   }
 
-  Future<void> _loadProfile() async {
-    _user = _auth.currentUser;
-    if (_user != null) {
-      try {
-        final snapshot =
-            await _firestore.collection('users').doc(_user!.uid).get();
-        if (mounted) {
-          setState(() {
-            _profileData = snapshot;
-            _loading = false;
-          });
-        }
-      } catch (e) {
-        debugPrint('❌ Failed to load profile: $e');
-        if (mounted) {
-          setState(() => _loading = false);
-        }
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => saving = true);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .update({
+        'name': _nameController.text.trim(),
+        'age': int.tryParse(_ageController.text.trim()) ?? 0,
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      debugPrint('❌ Failed to save profile: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
       }
     }
-  }
 
-  Future<void> _signOut() async {
-    await _auth.signOut();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-
-  }
-
-  void _editProfile() {
-    if (_user == null || _profileData == null) return;
-
-
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userId)
-        .update({
-      'name': _nameController.text.trim(),
-      'age': int.tryParse(_ageController.text.trim()) ?? 0,
-    });
-
-    setState(() => _saving = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated!')),
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditProfileScreen(
-          userId: _user!.uid,
-          initialData: _profileData!,
-        ),
-      ),
-
-    );
+    setState(() => saving = false);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context).textTheme;
 
-    if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    final data = _profileData?.data() as Map<String, dynamic>? ?? {};
-    final name = data['name'] ?? 'No name';
-    final age = data['age']?.toString() ?? 'Unknown';
-    final photoUrl = data['photoUrl'] as String?;
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _signOut,
-          ),
-        ],
-      ),
-
-      body: _saving
+      appBar: AppBar(title: const Text('Edit Profile')),
+      body: saving
           ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16),
@@ -314,31 +257,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-                  ? NetworkImage(photoUrl)
-                  : const AssetImage('assets/images/placeholder_avatar.png')
-                      as ImageProvider,
             ),
-            const SizedBox(height: 16),
-            Text(name, style: theme.headlineSmall),
-            Text('Age: $age'),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _editProfile,
-              icon: const Icon(Icons.edit),
-              label: const Text('Edit Profile'),
-
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
