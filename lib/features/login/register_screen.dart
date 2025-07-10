@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 import '../home/home_screen.dart';
 import '../home/islam_home_screen.dart';
@@ -24,6 +28,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  File? _pickedImage;
+
   final List<String> _religions = ['Christianity', 'Islam'];
   final List<String> _christianRoles = ['Student', 'Priest'];
   final List<String> _islamRoles = ['Student', 'Imam'];
@@ -37,6 +43,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 600,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  Future<String?> _uploadProfilePicture(String userId) async {
+    if (_pickedImage == null) return null;
+
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('profile_pics')
+          .child('$userId.jpg');
+
+      await ref.putFile(_pickedImage!);
+
+      final url = await ref.getDownloadURL();
+      return url;
+    } catch (e) {
+      debugPrint('Failed to upload profile picture: $e');
+      return null;
+    }
   }
 
   Future<void> _register() async {
@@ -80,20 +119,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
       );
 
+      final userId = userCred.user!.uid;
+
+      // Upload profile picture if picked
+      final profilePicUrl = await _uploadProfilePicture(userId);
+
       // Set displayName on Firebase Auth user
       await userCred.user!.updateDisplayName(name);
+      if (profilePicUrl != null) {
+        await userCred.user!.updatePhotoURL(profilePicUrl);
+      }
       await userCred.user!.reload();
       final refreshedUser = FirebaseAuth.instance.currentUser;
 
-      // Save in Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCred.user!.uid)
-          .set({
+      // Save in Firestore with profilePicUrl if available
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
         'name': name,
         'email': email,
         'religion': religion,
         'role': role,
+        'profilePicUrl': profilePicUrl ?? '',
         'createdAt': Timestamp.now(),
       });
 
@@ -101,30 +146,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (religion == 'Christianity') {
         if (role == 'Student') {
           Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => HomeScreen(
-                      studentName: refreshedUser?.displayName ?? name)));
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  HomeScreen(studentName: refreshedUser?.displayName ?? name),
+            ),
+          );
         } else {
           Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => PriestHomeScreen(
-                      priestName: refreshedUser?.displayName ?? name)));
+            context,
+            MaterialPageRoute(
+              builder: (_) => PriestHomeScreen(
+                  priestName: refreshedUser?.displayName ?? name),
+            ),
+          );
         }
       } else {
         if (role == 'Student') {
           Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => IslamHomeScreen(
-                      studentName: refreshedUser?.displayName ?? name)));
+            context,
+            MaterialPageRoute(
+              builder: (_) => IslamHomeScreen(
+                  studentName: refreshedUser?.displayName ?? name),
+            ),
+          );
         } else {
           Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => ImamHomeScreen(
-                      imamName: refreshedUser?.displayName ?? name)));
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  ImamHomeScreen(imamName: refreshedUser?.displayName ?? name),
+            ),
+          );
         }
       }
     } on FirebaseAuthException catch (e) {
@@ -179,6 +232,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     style: TextStyle(color: Colors.grey[600]),
                     textAlign: TextAlign.center,
                   ),
+                  const SizedBox(height: 24),
+
+                  // Profile picture picker
+                  Center(
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 55,
+                          backgroundColor: Colors.grey[300],
+                          backgroundImage: _pickedImage != null
+                              ? FileImage(_pickedImage!)
+                              : null,
+                          child: _pickedImage == null
+                              ? const Icon(Icons.person, size: 55)
+                              : null,
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.black54,
+                            ),
+                            onPressed: _pickImage,
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 24),
 
                   // Name
