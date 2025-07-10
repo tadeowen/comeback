@@ -80,6 +80,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: password,
       );
 
+      // Set displayName on Firebase Auth user
+      await userCred.user!.updateDisplayName(name);
+      await userCred.user!.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+
+      // Save in Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userCred.user!.uid)
@@ -91,27 +97,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': Timestamp.now(),
       });
 
+      // Navigate to correct screen with refreshed name
       if (religion == 'Christianity') {
         if (role == 'Student') {
-          Navigator.pushReplacement(context,
-              MaterialPageRoute(builder: (_) => HomeScreen(studentName: name)));
+          Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => HomeScreen(
+                      studentName: refreshedUser?.displayName ?? name)));
         } else {
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (_) => PriestHomeScreen(priestName: name)));
+                  builder: (_) => PriestHomeScreen(
+                      priestName: refreshedUser?.displayName ?? name)));
         }
       } else {
         if (role == 'Student') {
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (_) => IslamHomeScreen(studentName: name)));
+                  builder: (_) => IslamHomeScreen(
+                      studentName: refreshedUser?.displayName ?? name)));
         } else {
           Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                  builder: (_) => ImamHomeScreen(imamName: name)));
+                  builder: (_) => ImamHomeScreen(
+                      imamName: refreshedUser?.displayName ?? name)));
         }
       }
     } on FirebaseAuthException catch (e) {
