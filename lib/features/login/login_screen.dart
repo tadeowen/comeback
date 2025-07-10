@@ -36,14 +36,35 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Sign in the user
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      // Step 1: Sign in
+      UserCredential userCred = await FirebaseAuth.instance
+          .signInWithEmailAndPassword(email: email, password: password);
 
-      // Navigate to main app with bottom nav
-      Navigator.pushReplacementNamed(context, '/');
+      // Step 2: Fetch user document
+      final userId = userCred.user!.uid;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (!doc.exists) {
+        _showMessage('User data not found in Firestore.');
+        return;
+      }
+
+      final data = doc.data();
+      final name = data?['name'] ?? 'User';
+      final religion = data?['religion'] ?? '';
+
+      // Step 3: Navigate to /home and pass user info via arguments
+      Navigator.pushReplacementNamed(
+        context,
+        '/home',
+        arguments: {
+          'name': name,
+          'religion': religion,
+        },
+      );
     } on FirebaseAuthException catch (e) {
       _showMessage('Login failed: ${e.message}');
     } catch (e) {

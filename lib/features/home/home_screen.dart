@@ -17,7 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
     "The Lord is my shepherd - Psalm 23:1",
     "Trust in the Lord with all your heart - Prov 3:5",
     "Be strong and courageous - Joshua 1:9",
-    "For God so loved the world that he gave his only son that whoever believes in him shall not perish but have eternal life - John 3:16",
+    "For God so loved the world - John 3:16",
     "In all things God works for the good - Romans 8:28",
     "The Lord will fight for you - Exodus 14:14",
     "Cast all your anxiety on him - 1 Peter 5:7",
@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
     {"name": "Pr.Phaneroo", "image": "assets/images/pr3.jpg"},
     {"name": "Pr.Kayanja Robert", "image": "assets/images/pr4.jpg"},
     {"name": "Pr.Ssenyonga", "image": "assets/images/pr5.jpg"},
-    {"name": "Rev.Lydia Kitayimbwa", "image": "assets/images/pr6.jpg"}
+    {"name": "Rev.Lydia Kitayimbwa", "image": "assets/images/pr6.jpg"},
   ];
 
   final List<Map<String, String>> featuredPriests = [
@@ -84,166 +84,151 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.brown[50],
-      appBar: AppBar(
-        title: Text("Hello ${widget.studentName}!"),
-        backgroundColor: Colors.brown,
-        actions: const [
-          Icon(Icons.notifications),
-          SizedBox(width: 16),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Bible Verse Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.brown[100],
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bible Verse
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.brown[100],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              bibleVerses[currentVerseIndex],
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Search Bar
+          TextField(
+            controller: searchController,
+            onChanged: filterSearchResults,
+            decoration: InputDecoration(
+              hintText: 'Search for a priest or chapel...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                bibleVerses[currentVerseIndex],
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
+                borderSide: BorderSide(color: Colors.brown.shade300),
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          const SizedBox(height: 16),
 
-            // Search Bar
-            TextField(
-              controller: searchController,
-              onChanged: filterSearchResults,
-              decoration: InputDecoration(
-                hintText: 'Search for a priest or chapel...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.white,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.brown.shade300),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Priests Section
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Priests",
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text("See All"),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 100,
-              child: filteredPriests.isEmpty
-                  ? const Center(child: Text("No priests found."))
-                  : ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: filteredPriests.map((priest) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                backgroundImage: AssetImage(priest["image"]!),
-                                radius: 30,
-                              ),
-                              const SizedBox(height: 5),
-                              Text(priest["name"]!,
-                                  style: const TextStyle(fontSize: 12)),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-            ),
-            const SizedBox(height: 24),
-
-            // Featured Priests
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Featured Priests",
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text("See All"),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 160,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: featuredPriests.map((priest) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.asset(priest["image"]!,
-                              width: 120, height: 100, fit: BoxFit.cover),
+          // Priests
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Priests",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text("See All"),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 100,
+            child: filteredPriests.isEmpty
+                ? const Center(child: Text("No priests found."))
+                : ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: filteredPriests.map((priest) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              backgroundImage: AssetImage(priest["image"]!),
+                              radius: 30,
+                            ),
+                            const SizedBox(height: 5),
+                            Text(priest["name"]!,
+                                style: const TextStyle(fontSize: 12)),
+                          ],
                         ),
-                        const SizedBox(height: 5),
-                        Text(priest["name"]!,
-                            style: const TextStyle(fontSize: 14)),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-            ),
-            const SizedBox(height: 24),
+                      );
+                    }).toList(),
+                  ),
+          ),
+          const SizedBox(height: 24),
 
-            // Chapels Section
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text("Chapels",
-                    style:
-                        TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text("See All"),
-              ],
+          // Featured Priests
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Featured Priests",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text("See All"),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 160,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: featuredPriests.map((priest) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(priest["image"]!,
+                            width: 120, height: 100, fit: BoxFit.cover),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(priest["name"]!,
+                          style: const TextStyle(fontSize: 14)),
+                    ],
+                  ),
+                );
+              }).toList(),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 160,
-              child: filteredChapels.isEmpty
-                  ? const Center(child: Text("No chapels found."))
-                  : ListView(
-                      scrollDirection: Axis.horizontal,
-                      children: filteredChapels.map((chapel) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.asset(chapel["image"]!,
-                                    width: 120, height: 100, fit: BoxFit.cover),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(chapel["name"]!,
-                                  style: const TextStyle(fontSize: 14)),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 24),
+
+          // Chapels
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Chapels",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              Text("See All"),
+            ],
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 160,
+            child: filteredChapels.isEmpty
+                ? const Center(child: Text("No chapels found."))
+                : ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: filteredChapels.map((chapel) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: Column(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset(chapel["image"]!,
+                                  width: 120, height: 100, fit: BoxFit.cover),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(chapel["name"]!,
+                                style: const TextStyle(fontSize: 14)),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+        ],
       ),
     );
   }

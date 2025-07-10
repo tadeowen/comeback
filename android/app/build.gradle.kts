@@ -7,6 +7,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -64,3 +65,4 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+apply plugin: 'com.google.gms.google-services'

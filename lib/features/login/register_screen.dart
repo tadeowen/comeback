@@ -20,10 +20,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final List<String> _religions = ['Christianity', 'Islam'];
 
+  // Password strength variables
+  double _passwordStrength = 0;
+  String _passwordFeedback = '';
+  Color _passwordColor = Colors.grey;
+
   // Helper to validate email format
   bool _isValidEmail(String email) {
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     return emailRegex.hasMatch(email);
+  }
+
+  void _checkPasswordStrength(String password) {
+    double strength = 0;
+    if (password.length >= 6) strength += 0.25;
+    if (password.contains(RegExp(r'[A-Z]'))) strength += 0.25;
+    if (password.contains(RegExp(r'[0-9]'))) strength += 0.25;
+    if (password.contains(RegExp(r'[!@#\$&*~]'))) strength += 0.25;
+
+    String feedback;
+    Color color;
+    if (strength == 1) {
+      feedback = "Strong";
+      color = Colors.green;
+    } else if (strength >= 0.75) {
+      feedback = "Good";
+      color = Colors.lightGreen;
+    } else if (strength >= 0.5) {
+      feedback = "Weak";
+      color = Colors.orange;
+    } else {
+      feedback = "Very Weak";
+      color = Colors.red;
+    }
+
+    setState(() {
+      _passwordStrength = strength;
+      _passwordFeedback = feedback;
+      _passwordColor = color;
+    });
   }
 
   Future<void> _register() async {
@@ -105,6 +140,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Register')),
@@ -119,15 +162,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _emailController,
-              keyboardType: TextInputType.emailAddress, // show email keyboard
+              keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
               obscureText: true,
+              onChanged: _checkPasswordStrength,
               decoration: const InputDecoration(labelText: 'Password'),
             ),
+
+            const SizedBox(height: 8),
+
+            // Password strength bar
+            LinearProgressIndicator(
+              value: _passwordStrength,
+              color: _passwordColor,
+              backgroundColor: Colors.grey[300],
+              minHeight: 5,
+            ),
+
+            // Password strength feedback text
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _passwordFeedback,
+                  style: TextStyle(
+                    color: _passwordColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedReligion,
