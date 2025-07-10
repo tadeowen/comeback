@@ -2,24 +2,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class IslamChatScreen extends StatefulWidget {
-  const IslamChatScreen({super.key});
+class ImamChatScreen extends StatefulWidget {
+  const ImamChatScreen({super.key});
 
   @override
-  State<IslamChatScreen> createState() => _IslamChatScreenState();
+  State<ImamChatScreen> createState() => _ImamChatScreenState();
 }
 
-class _IslamChatScreenState extends State<IslamChatScreen> {
+class _ImamChatScreenState extends State<ImamChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final ScrollController _scrollController = ScrollController();
   bool _isAnonymous = false;
 
+  // Use a separate collection for imam chats
+  final CollectionReference _imamChats =
+      FirebaseFirestore.instance.collection('imam_chats');
+
   Future<void> _sendMessage() async {
     final user = _auth.currentUser;
     if (user == null || _controller.text.trim().isEmpty) return;
 
-    await user.reload(); // ✅ Make sure we have the latest displayName
+    await user.reload();
     final refreshedUser = _auth.currentUser;
     final nameToUse = _isAnonymous
         ? 'Anonymous'
@@ -27,11 +31,12 @@ class _IslamChatScreenState extends State<IslamChatScreen> {
             ? refreshedUser!.displayName
             : 'Unknown User');
 
-    await FirebaseFirestore.instance.collection('chats').add({
+    await _imamChats.add({
       'text': _controller.text.trim(),
       'uid': refreshedUser?.uid,
       'name': nameToUse,
       'timestamp': FieldValue.serverTimestamp(),
+      'isImam': true, // Mark as imam message
     });
 
     _controller.clear();
@@ -43,13 +48,10 @@ class _IslamChatScreenState extends State<IslamChatScreen> {
 
     return Column(
       children: [
-        // 📨 Messages
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('chats')
-                .orderBy('timestamp', descending: true)
-                .snapshots(),
+            stream:
+                _imamChats.orderBy('timestamp', descending: true).snapshots(),
             builder: (ctx, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -76,6 +78,7 @@ class _IslamChatScreenState extends State<IslamChatScreen> {
                   final isMe = msg['uid'] == _auth.currentUser?.uid;
                   final name = msg['name']?.toString() ?? 'Anonymous';
                   final text = msg['text']?.toString() ?? '';
+                  final isImam = msg['isImam'] == true;
 
                   return Align(
                     alignment:
@@ -85,9 +88,15 @@ class _IslamChatScreenState extends State<IslamChatScreen> {
                           vertical: 4, horizontal: 8),
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: isMe
-                            ? (isDark ? Colors.green[800] : Colors.green[100])
-                            : (isDark ? Colors.grey[800] : Colors.grey[300]),
+                        color: isImam
+                            ? (isDark ? Colors.blue[800] : Colors.blue[100])
+                            : isMe
+                                ? (isDark
+                                    ? Colors.green[800]
+                                    : Colors.green[100])
+                                : (isDark
+                                    ? Colors.grey[800]
+                                    : Colors.grey[300]),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Column(
@@ -95,7 +104,7 @@ class _IslamChatScreenState extends State<IslamChatScreen> {
                         children: [
                           if (name != 'Anonymous')
                             Text(
-                              name,
+                              isImam ? 'Imam $name' : name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 12,
@@ -115,8 +124,7 @@ class _IslamChatScreenState extends State<IslamChatScreen> {
             },
           ),
         ),
-
-        // 💬 Input + Switch
+        // ... rest of your UI remains the same ...
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
