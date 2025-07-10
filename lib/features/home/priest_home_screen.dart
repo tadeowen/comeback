@@ -23,7 +23,7 @@ class _PriestHomeScreenState extends State<PriestHomeScreen> {
     'Guidance',
   ];
 
-  List<String> _selectedPreferences = [];
+  final List<String> _selectedPreferences = [];
 
   void _submitPreferences() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;

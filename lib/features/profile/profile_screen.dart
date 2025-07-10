@@ -34,8 +34,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration: const InputDecoration(labelText: 'Age'),
                   keyboardType: TextInputType.number,
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Please enter your age';
+                    }
                     final age = int.tryParse(value);
                     if (age == null || age <= 0) return 'Enter a valid age';
                     return null;
@@ -46,8 +47,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   decoration: const InputDecoration(labelText: 'Phone Number'),
                   keyboardType: TextInputType.phone,
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return 'Please enter your phone number';
+                    }
                     if (value.length < 7) return 'Enter a valid phone number';
                     return null;
                   },

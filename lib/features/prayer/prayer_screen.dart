@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class PrayerScreen extends StatefulWidget {
-  const PrayerScreen({Key? key}) : super(key: key);
+  const PrayerScreen({super.key});
 
   @override
   State<PrayerScreen> createState() => _PrayerScreenState();

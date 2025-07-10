@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
 import '../media/quran_page.dart';
 import '../chat/islam_chat_screen.dart';
+import '../prayer/islam_prayer_request.dart';
 // import '../profile/islam_profile_screen.dart'; // Optional
 
 class IslamHomeScreen extends StatefulWidget {
@@ -25,7 +25,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
     _pages = [
       FeaturedImamsHome(studentName: widget.studentName),
       const QuranPage(),
-      const Center(child: Text("🤲 Duas")),
+      const IslamPrayerRequest(),
       const Center(child: Text("💡 Hadith")),
       const IslamChatScreen(),
       // MuslimSettingsScreen(studentName: widget.studentName), // Your real settings screen here
@@ -49,7 +49,8 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Qur’an'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Duas'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite), label: 'Prayer Request'),
           BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Hadith'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Chat'),
           BottomNavigationBarItem(
