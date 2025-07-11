@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'edit_profile_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,46 +10,15 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
+  final _formKey = GlobalKey<FormState>();
+  final _ageController = TextEditingController();
+  final _phoneController = TextEditingController();
 
-  User? _user;
-  DocumentSnapshot? _profileData;
-  bool _loading = true;
+  Future<void> _showEditDialog(
+      Map<String, dynamic> currentData, String userId) async {
+    _ageController.text = currentData['age']?.toString() ?? '';
+    _phoneController.text = currentData['phone'] ?? '';
 
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    _user = _auth.currentUser;
-    if (_user != null) {
-      try {
-        final snapshot =
-            await _firestore.collection('users').doc(_user!.uid).get();
-        if (mounted) {
-          setState(() {
-            _profileData = snapshot;
-            _loading = false;
-          });
-        }
-      } catch (e) {
-        debugPrint('❌ Failed to load profile: $e');
-        if (mounted) {
-          setState(() => _loading = false);
-        }
-      }
-    }
-  }
-
-  Future<void> _signOut() async {
-    await _auth.signOut();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
-    }
-  }
 
   Future<void> _confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
@@ -106,58 +74,157 @@ class _ProfileScreenState extends State<ProfileScreen> {
           userId: _user!.uid,
           initialData: _profileData!,
         ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel')),
+          ElevatedButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .update({
+                    'age': int.parse(_ageController.text.trim()),
+                    'phone': _phoneController.text.trim(),
+                  });
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                        content: Text('Profile updated successfully!')),
+                  );
+                }
+              },
+              child: const Text('Save')),
+        ],
       ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
+  void dispose() {
+    _ageController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
-    if (_loading) {
+  @override
+  Widget build(BuildContext context) {
+    final String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (userId == null) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+        body: Center(child: Text('User not logged in')),
       );
     }
 
-    final data = _profileData?.data() as Map<String, dynamic>? ?? {};
-    final name = data['name'] ?? 'No name';
-    final age = data['age']?.toString() ?? 'Unknown';
-    final photoUrl = data['photoUrl'] as String?;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('My Profile'),
+        backgroundColor: Colors.deepPurple,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
+
             onPressed: _confirmLogout,
             tooltip: 'Logout',
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 60,
-              backgroundImage: photoUrl != null && photoUrl.isNotEmpty
-                  ? NetworkImage(photoUrl)
-                  : const AssetImage('assets/images/placeholder_avatar.png')
-                      as ImageProvider,
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('No user data found.'));
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+
+          final name = data['name'] ?? 'No Name';
+          final email = data['email'] ?? 'No Email';
+          final age = data['age']?.toString() ?? 'Not set';
+          final phone = data['phone'] ?? 'Not set';
+          final confirmationCode = data['confirmationCode'];
+          final appointment = data['appointment'];
+
+          return Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ListView(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Profile Info',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.edit),
+                      label: const Text('Edit'),
+                      onPressed: () => _showEditDialog(data, userId),
+                    )
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: Text('Name'),
+                  subtitle: Text(name),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.email),
+                  title: Text('Email'),
+                  subtitle: Text(email),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.cake),
+                  title: Text('Age'),
+                  subtitle: Text(age),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.phone),
+                  title: Text('Phone Number'),
+                  subtitle: Text(phone),
+                ),
+                const SizedBox(height: 20),
+                const Divider(),
+                const Text(
+                  'Prayer Confirmation',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 10),
+                if (confirmationCode != null)
+                  ListTile(
+                    leading:
+                        const Icon(Icons.verified_user, color: Colors.green),
+                    title: const Text('Confirmation Code'),
+                    subtitle: Text(confirmationCode),
+                  ),
+                if (appointment != null)
+                  ListTile(
+                    leading:
+                        const Icon(Icons.calendar_today, color: Colors.teal),
+                    title: const Text('Appointment Date'),
+                    subtitle: Text(appointment),
+                  ),
+                if (confirmationCode == null && appointment == null)
+                  const Text('No prayer request submitted yet.'),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(name, style: theme.headlineSmall),
-            Text('Age: $age'),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _editProfile,
-              icon: const Icon(Icons.edit),
-              label: const Text('Edit Profile'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

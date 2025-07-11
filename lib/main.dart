@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 
+// Screens
 import 'features/login/login_screen.dart';
 import 'features/login/register_screen.dart';
 import 'features/profile/profile_screen.dart';
@@ -14,12 +16,29 @@ import 'features/prayer/prayer_screen.dart';
 import 'features/chat/chat_screen.dart';
 import 'features/home/landing_screen.dart';
 
-void main() async {
+// Theme
+import 'core/theme.dart';
+import 'core/themeNotifier.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  try {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e, stack) {
+    debugPrint("❌ Firebase init failed: $e");
+    debugPrintStack(stackTrace: stack);
+  }
+
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => ThemeNotifier(),
+      child: const MyApp(),
+    ),
   );
-  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -27,20 +46,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Church App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      debugShowCheckedModeBanner: false,
-      routes: {
-        '/': (context) => const LandingScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/home': (context) => const MainNavigation(),
+    return Consumer<ThemeNotifier>(
+      builder: (context, themeNotifier, _) {
+        return MaterialApp(
+          title: 'Church App',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.lightTheme,
+          darkTheme: ThemeData.dark(),
+          themeMode: themeNotifier.themeMode,
+          initialRoute:
+              FirebaseAuth.instance.currentUser == null ? '/login' : '/',
+          routes: {
+            '/': (context) => const MainNavigation(),
+            '/login': (context) => const LoginScreen(),
+            '/register': (context) => const RegisterScreen(),
+            '/profile': (context) => const ProfileScreen(),
+          },
+        );
       },
-      initialRoute: '/',
     );
   }
 }
@@ -113,10 +136,8 @@ class _MainNavigationState extends State<MainNavigation> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.video_library), label: 'Media'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.accessibility_new), label: 'Prayer'),
+          BottomNavigationBarItem(icon: Icon(Icons.video_library), label: 'Media'),
+          BottomNavigationBarItem(icon: Icon(Icons.accessibility_new), label: 'Prayer'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],

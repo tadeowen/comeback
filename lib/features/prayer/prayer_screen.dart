@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 class PrayerScreen extends StatefulWidget {
@@ -9,153 +8,144 @@ class PrayerScreen extends StatefulWidget {
 }
 
 class _PrayerScreenState extends State<PrayerScreen> {
-  final TextEditingController _requestController = TextEditingController();
-  final TextEditingController _ageController = TextEditingController();
+  final List<String> _prayerPoints = [
+    'Healing',
+    'Forgiveness',
+    'Success in Exams',
+    'Family Peace',
+    'Guidance',
+    'Other',
+  ];
 
-  String? _assignedDay;
+  final List<String> _leaders = [
+    'Fr. Andrew',
+    'Sr. Mary',
+    'Imam Yusuf',
+    'Sheikh Musa'
+  ];
+
+  String? _selectedPrayerPoint;
+  String? _selectedLeader;
+  String _customPrayer = '';
   String? _confirmationCode;
 
-  final Map<String, String> _keywords = {
-    'family': 'Monday',
-    'academic': 'Tuesday',
-    'study': 'Tuesday',
-    'school': 'Tuesday',
-    'relationship': 'Wednesday',
-    'marriage': 'Wednesday',
-    'healing': 'Thursday',
-    'sickness': 'Thursday',
-    'demon': 'Friday',
-    'deliverance': 'Friday',
-    'general': 'Saturday',
-    'elderly': 'Sunday',
-    'old': 'Sunday',
-  };
+  final _formKey = GlobalKey<FormState>();
 
-  void _processRequest() {
-    final request = _requestController.text.toLowerCase();
-    final ageText = _ageController.text;
-
-    if (request.isEmpty || ageText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both age and request')),
-      );
-      return;
-    }
-
-    final age = int.tryParse(ageText);
-    if (age == null || age <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a valid age')),
-      );
-      return;
-    }
-
-    String matchedDay = 'Saturday'; // default: general
-    if (age >= 60) {
-      matchedDay = 'Sunday';
-    } else {
-      for (final keyword in _keywords.keys) {
-        if (request.contains(keyword)) {
-          matchedDay = _keywords[keyword]!;
-          break;
-        }
-      }
-    }
-
-    final code = _generateCode(5);
-
-    setState(() {
-      _assignedDay = matchedDay;
-      _confirmationCode = code;
-    });
+  String _generateConfirmationCode() {
+    final now = DateTime.now();
+    return 'CONF-${now.millisecondsSinceEpoch}';
   }
 
-  String _generateCode(int length) {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    final rand = Random();
-    return List.generate(length, (_) => letters[rand.nextInt(letters.length)])
-        .join();
+  void _submitRequest() {
+    if (_formKey.currentState!.validate()) {
+      final requestText = _selectedPrayerPoint == 'Other'
+          ? _customPrayer
+          : _selectedPrayerPoint;
+
+      setState(() {
+        _confirmationCode = _generateConfirmationCode();
+      });
+
+      // Simulate Firestore or backend submission here
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Prayer request submitted to $_selectedLeader'),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Prayer Request'),
+        title: const Text('Submit Prayer Request'),
+        backgroundColor: Colors.deepPurple,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(
-              'Submit Your Prayer Request',
-              style: theme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _ageController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Your Age',
-                border: OutlineInputBorder(),
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Select Prayer Point',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedPrayerPoint,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPrayerPoint = value;
+                  });
+                },
+                items: _prayerPoints
+                    .map((point) => DropdownMenuItem(
+                          value: point,
+                          child: Text(point),
+                        ))
+                    .toList(),
+                validator: (value) =>
+                    value == null ? 'Please choose a prayer point' : null,
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _requestController,
-              maxLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Your Prayer Request',
-                border: OutlineInputBorder(),
+              const SizedBox(height: 16),
+              if (_selectedPrayerPoint == 'Other')
+                TextFormField(
+                  decoration: const InputDecoration(
+                    labelText: 'Custom Prayer Request',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                  onChanged: (val) => _customPrayer = val,
+                  validator: (val) => val == null || val.isEmpty
+                      ? 'Please enter your prayer request'
+                      : null,
+                ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Choose Religious Leader',
+                  border: OutlineInputBorder(),
+                ),
+                value: _selectedLeader,
+                onChanged: (value) {
+                  setState(() {
+                    _selectedLeader = value;
+                  });
+                },
+                items: _leaders
+                    .map((leader) => DropdownMenuItem(
+                          value: leader,
+                          child: Text(leader),
+                        ))
+                    .toList(),
+                validator: (value) =>
+                    value == null ? 'Please choose a leader' : null,
               ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _processRequest,
-              child: const Text('Submit Request'),
-            ),
-            const SizedBox(height: 12),
-            if (_assignedDay != null && _confirmationCode != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
+              const SizedBox(height: 24),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: _submitRequest,
+                child: const Text('Submit Request'),
+              ),
+              if (_confirmationCode != null) ...[
+                const SizedBox(height: 24),
+                Card(
                   color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(12),
+                  child: ListTile(
+                    leading:
+                        const Icon(Icons.verified_user, color: Colors.green),
+                    title: Text('Confirmation Code'),
+                    subtitle: Text(_confirmationCode!),
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Your prayer has been scheduled for:',
-                      style: theme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _assignedDay!,
-                      style: theme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your Confirmation Code:',
-                      style: theme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _confirmationCode!,
-                      style: theme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                        color: Colors.green.shade900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-          ],
+              ]
+            ],
+          ),
         ),
       ),
     );
