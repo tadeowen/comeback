@@ -375,14 +375,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
-
                   const SizedBox(height: 12),
-
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/');
+                      Navigator.pushReplacementNamed(context, '/login');
                     },
-                    child: const Text('Already have an account? Login'),
+                    child: const Text("Already have an account? Login"),
                   ),
                 ],
               ),
