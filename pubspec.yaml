@@ -1,7 +1,5 @@
 name: comeback
 description: "A religious Flutter app for prayer requests, gospel media, chat, and spiritual support."
-publish_to: 'none'
-//app ekaaye
 version: 1.0.0+1
 
 environment:
