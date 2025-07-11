@@ -40,18 +40,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return [];
   }
 
+  // Password strength variables
+  double _passwordStrength = 0;
+  String _passwordFeedback = '';
+  Color _passwordColor = Colors.grey;
+
   bool _isValidEmail(String email) {
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}\$');
     return emailRegex.hasMatch(email);
+  }
+
+  void _checkPasswordStrength(String password) {
+    double strength = 0;
+    if (password.length >= 6) strength += 0.25;
+    if (password.contains(RegExp(r'[A-Z]'))) strength += 0.25;
+    if (password.contains(RegExp(r'[0-9]'))) strength += 0.25;
+    if (password.contains(RegExp(r'[!@#\\$&*~]'))) strength += 0.25;
+
+    String feedback;
+    Color color;
+    if (strength == 1) {
+      feedback = "Strong";
+      color = Colors.green;
+    } else if (strength >= 0.75) {
+      feedback = "Good";
+      color = Colors.lightGreen;
+    } else if (strength >= 0.5) {
+      feedback = "Weak";
+      color = Colors.orange;
+    } else {
+      feedback = "Very Weak";
+      color = Colors.red;
+    }
+
+    setState(() {
+      _passwordStrength = strength;
+      _passwordFeedback = feedback;
+      _passwordColor = color;
+    });
   }
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 600,
-    );
-
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         _pickedImage = File(pickedFile.path);
@@ -69,11 +100,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           .child('$userId.jpg');
 
       await ref.putFile(_pickedImage!);
-
       final url = await ref.getDownloadURL();
       return url;
     } catch (e) {
-      debugPrint('Failed to upload profile picture: $e');
+      debugPrint('Failed to upload profile picture: \$e');
       return null;
     }
   }
@@ -85,11 +115,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final religion = _selectedReligion;
     final role = _selectedRole;
 
-    if (name.isEmpty ||
-        email.isEmpty ||
-        password.isEmpty ||
-        religion == null ||
-        role == null) {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || religion == null || role == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
       );
@@ -113,18 +139,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final userCred =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final userCred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       final userId = userCred.user!.uid;
-
-      // Upload profile picture if picked
       final profilePicUrl = await _uploadProfilePicture(userId);
 
-      // Set displayName on Firebase Auth user
       await userCred.user!.updateDisplayName(name);
       if (profilePicUrl != null) {
         await userCred.user!.updatePhotoURL(profilePicUrl);
@@ -132,7 +154,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await userCred.user!.reload();
       final refreshedUser = FirebaseAuth.instance.currentUser;
 
-      // Save in Firestore with profilePicUrl if available
       await FirebaseFirestore.instance.collection('users').doc(userId).set({
         'name': name,
         'email': email,
@@ -142,22 +163,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'createdAt': Timestamp.now(),
       });
 
-      // Navigate to correct screen with refreshed name
       if (religion == 'Christianity') {
         if (role == 'Student') {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  HomeScreen(studentName: refreshedUser?.displayName ?? name),
+              builder: (_) => HomeScreen(studentName: refreshedUser?.displayName ?? name),
             ),
           );
         } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => PriestHomeScreen(
-                  priestName: refreshedUser?.displayName ?? name),
+              builder: (_) => PriestHomeScreen(priestName: refreshedUser?.displayName ?? name),
             ),
           );
         }
@@ -166,16 +184,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => IslamHomeScreen(
-                  studentName: refreshedUser?.displayName ?? name),
+              builder: (_) => IslamHomeScreen(studentName: refreshedUser?.displayName ?? name),
             ),
           );
         } else {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) =>
-                  ImamHomeScreen(imamName: refreshedUser?.displayName ?? name),
+              builder: (_) => ImamHomeScreen(imamName: refreshedUser?.displayName ?? name),
             ),
           );
         }
@@ -195,11 +211,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Unexpected error: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Unexpected error: \$e')));
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -213,8 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           padding: const EdgeInsets.all(24),
           child: Card(
             elevation: 10,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -223,7 +245,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   Text(
                     'Join the ComeBack Family',
                     style: theme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
@@ -241,9 +265,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         CircleAvatar(
                           radius: 55,
                           backgroundColor: Colors.grey[300],
-                          backgroundImage: _pickedImage != null
-                              ? FileImage(_pickedImage!)
-                              : null,
+                          backgroundImage:
+                              _pickedImage != null ? FileImage(_pickedImage!) : null,
                           child: _pickedImage == null
                               ? const Icon(Icons.person, size: 55)
                               : null,
@@ -252,10 +275,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           bottom: 0,
                           right: 0,
                           child: IconButton(
-                            icon: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.black54,
-                            ),
+                            icon: const Icon(Icons.camera_alt, color: Colors.black54),
                             onPressed: _pickImage,
                           ),
                         )
@@ -265,43 +285,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Name
                   TextField(
                     controller: _nameController,
                     decoration: InputDecoration(
                       labelText: 'Full Name',
                       prefixIcon: const Icon(Icons.person),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Email
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       labelText: 'Email',
                       prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                   const SizedBox(height: 16),
 
-                  // Password
                   TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
+                    onChanged: _checkPasswordStrength,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       prefixIcon: const Icon(Icons.lock),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
                         ),
                         onPressed: () {
                           setState(() {
@@ -309,24 +323,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           });
                         },
                       ),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
+
+                  if (_passwordController.text.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          LinearProgressIndicator(
+                            value: _passwordStrength,
+                            color: _passwordColor,
+                            backgroundColor: Colors.grey[300],
+                            minHeight: 6,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _passwordFeedback,
+                            style: TextStyle(
+                              color: _passwordColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: 16),
 
-                  // Religion dropdown
                   DropdownButtonFormField<String>(
                     value: _selectedReligion,
                     decoration: InputDecoration(
                       labelText: 'Select Religion',
                       prefixIcon: const Icon(Icons.self_improvement),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     items: _religions.map((religion) {
-                      return DropdownMenuItem(
-                          value: religion, child: Text(religion));
+                      return DropdownMenuItem(value: religion, child: Text(religion));
                     }).toList(),
                     onChanged: (value) {
                       setState(() {
@@ -335,28 +370,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       });
                     },
                   ),
+
                   const SizedBox(height: 16),
 
-                  // Role dropdown (based on religion)
                   if (_selectedReligion != null)
                     DropdownButtonFormField<String>(
                       value: _selectedRole,
                       decoration: InputDecoration(
                         labelText: 'Select Role',
                         prefixIcon: const Icon(Icons.emoji_people),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                       ),
                       items: _currentRoles.map((role) {
                         return DropdownMenuItem(value: role, child: Text(role));
                       }).toList(),
-                      onChanged: (value) =>
-                          setState(() => _selectedRole = value),
+                      onChanged: (value) => setState(() => _selectedRole = value),
                     ),
 
                   const SizedBox(height: 24),
 
-                  // Register Button
                   ElevatedButton.icon(
                     onPressed: _isLoading ? null : _register,
                     icon: _isLoading
@@ -375,12 +407,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
+
                   const SizedBox(height: 12),
+
                   TextButton(
                     onPressed: () {
-                      Navigator.pushReplacementNamed(context, '/login');
+                      Navigator.pushReplacementNamed(context, '/');
                     },
-                    child: const Text("Already have an account? Login"),
+                    child: const Text('Already have an account? Login'),
                   ),
                 ],
               ),
