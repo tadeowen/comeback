@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,7 +33,7 @@ class _HomeScreenState extends State<HomeScreen>
   Timer? _verseTimer;
   double _opacity = 1.0;
 
-    final List<Map<String, String>> priests = [
+  final List<Map<String, String>> priests = [
     {"name": "Pr.Bugembe", "image": "assets/images/pr1.jpg"},
     {"name": "Pr.Sempa", "image": "assets/images/pr2.jpg"},
     {"name": "Pr.Phaneroo", "image": "assets/images/pr3.jpg"},
@@ -43,7 +42,6 @@ class _HomeScreenState extends State<HomeScreen>
     {"name": "Rev.Lydia Kitayimbwa", "image": "assets/images/pr6.jpg"},
     {"name": "Fr. Josephat Ddungu", "image": "assets/images/pr7.jpg"},
   ];
-
 
   final List<Map<String, String>> featuredPriests = [
     {"name": "Pr.Kayanja Robert", "image": "assets/images/pr4.jpg"},
@@ -57,10 +55,8 @@ class _HomeScreenState extends State<HomeScreen>
 
   List<Map<String, String>> filteredPriests = [];
   List<Map<String, String>> filteredChapels = [];
-
   final TextEditingController searchController = TextEditingController();
 
-  // For notification badge bounce animation
   late AnimationController _animationController;
   late Animation<double> _bounceAnimation;
 
@@ -74,21 +70,18 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
+
     _bounceAnimation = Tween<double>(begin: 1.0, end: 1.3).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
-    // Cycle Bible verses with fade animation
     _verseTimer = Timer.periodic(const Duration(seconds: 6), (_) async {
-      // Fade out
       setState(() => _opacity = 0.0);
       await Future.delayed(const Duration(milliseconds: 800));
-      // Change verse
       setState(() {
         currentVerseIndex = (currentVerseIndex + 1) % bibleVerses.length;
+        _opacity = 1.0;
       });
-      // Fade in
-      setState(() => _opacity = 1.0);
     });
   }
 
@@ -148,6 +141,7 @@ class _HomeScreenState extends State<HomeScreen>
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return const Text('No new replies.');
                 }
+
                 final docs = snapshot.data!.docs;
                 return ListView.builder(
                   shrinkWrap: true,
@@ -330,226 +324,178 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-@override
-Widget build(BuildContext context) {
-  final userEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+  @override
+  Widget build(BuildContext context) {
+    final userEmail = FirebaseAuth.instance.currentUser?.email ?? '';
 
-  return Scaffold(
-    backgroundColor: Colors.brown.shade50,
-    appBar: AppBar(
-      title: Text("Hello ${widget.studentName}!"),
-      backgroundColor: Colors.deepPurple,
-      elevation: 8,
-      actions: [
-        StreamBuilder<int>(
-          stream: unreadNotificationCountStream(userEmail),
-          builder: (context, snapshot) {
-            int count = snapshot.data ?? 0;
+    return Scaffold(
+      backgroundColor: Colors.brown.shade50,
+      appBar: AppBar(
+        title: Text("Hello ${widget.studentName}!"),
+        backgroundColor: Colors.deepPurple,
+        elevation: 8,
+        actions: [
+          StreamBuilder<int>(
+            stream: unreadNotificationCountStream(userEmail),
+            builder: (context, snapshot) {
+              int count = snapshot.data ?? 0;
 
-            return ScaleTransition(
-              scale: _bounceAnimation,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications),
-                    onPressed: () =>
-                        _showNotificationsDialog(context, userEmail),
-                  ),
-                  if (count > 0)
-                    Positioned(
-                      right: 6,
-                      top: 6,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.redAccent.withOpacity(0.6),
-                              blurRadius: 6,
-                              spreadRadius: 1,
-                            )
-                          ],
-                        ),
-                        constraints: const BoxConstraints(
-                            minWidth: 20, minHeight: 20),
-                        child: Text(
-                          '$count',
-                          style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center,
+              return ScaleTransition(
+                scale: _bounceAnimation,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications),
+                      onPressed: () =>
+                          _showNotificationsDialog(context, userEmail),
+                    ),
+                    if (count > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.redAccent.withOpacity(0.6),
+                                blurRadius: 6,
+                                spreadRadius: 1,
+                              )
+                            ],
+                          ),
+                          constraints:
+                              const BoxConstraints(minWidth: 20, minHeight: 20),
+                          child: Text(
+                            '$count',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                          ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-        const SizedBox(width: 16),
-      ],
-    ),
-    body: SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Animated Bible Verse
-          AnimatedOpacity(
-            opacity: _opacity,
-            duration: const Duration(milliseconds: 800),
-            curve: Curves.easeInOut,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF7B2FF7), Color(0xFFB9ACF3)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  ],
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.deepPurple.shade200.withOpacity(0.6),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  )
-                ],
-              ),
-              child: Text(
-                bibleVerses[currentVerseIndex],
-                style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    height: 1.3),
-                textAlign: TextAlign.center,
-              ),
-            ),
+              );
+            },
           ),
-
-          const SizedBox(height: 28),
-
-          // Search Bar
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.deepPurple.shade100.withOpacity(0.4),
-                  blurRadius: 10,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: TextField(
-              controller: searchController,
-              onChanged: filterSearchResults,
-              decoration: InputDecoration(
-                hintText: 'Search for a priest or chapel...',
-                prefixIcon:
-                    const Icon(Icons.search, color: Colors.deepPurple),
-                border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              ),
-              cursorColor: Colors.deepPurple,
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          _buildSectionHeader("Priests"),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 130,
-            child: filteredPriests.isEmpty
-                ? const Center(child: Text("No priests found."))
-                : ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: filteredPriests.map(_buildPriestCard).toList(),
-                  ),
-          ),
-
-          const SizedBox(height: 28),
-
-          _buildSectionHeader("Featured Priests"),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 180,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              children:
-                  featuredPriests.map(_buildFeaturedPriestCard).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 28),
-
-          _buildSectionHeader("Chapels"),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 180,
-            child: filteredChapels.isEmpty
-                ? const Center(child: Text("No chapels found."))
-                : ListView(
-                    scrollDirection: Axis.horizontal,
-                    children:
-                        filteredChapels.map(_buildChapelCard).toList(),
-                  ),
-          ),
+          const SizedBox(width: 16),
         ],
       ),
-    ),
-  );
-}
-
-          ),
-          const SizedBox(height: 24),
-
-          // Chapels
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Chapels",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              Text("See All"),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 160,
-            child: filteredChapels.isEmpty
-                ? const Center(child: Text("No chapels found."))
-                : ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: filteredChapels.map((chapel) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: Column(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(chapel["image"]!,
-                                  width: 120, height: 100, fit: BoxFit.cover),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(chapel["name"]!,
-                                style: const TextStyle(fontSize: 14)),
-                          ],
-                        ),
-                      );
-                    }).toList(),
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Bible verse card
+            AnimatedOpacity(
+              opacity: _opacity,
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeInOut,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF7B2FF7), Color(0xFFB9ACF3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-          ),
-        ],
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.deepPurple.shade200.withOpacity(0.6),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    )
+                  ],
+                ),
+                child: Text(
+                  bibleVerses[currentVerseIndex],
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      height: 1.3),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            // Search
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.deepPurple.shade100.withOpacity(0.4),
+                    blurRadius: 10,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: searchController,
+                onChanged: filterSearchResults,
+                decoration: InputDecoration(
+                  hintText: 'Search for a priest or chapel...',
+                  prefixIcon:
+                      const Icon(Icons.search, color: Colors.deepPurple),
+                  border: InputBorder.none,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                ),
+                cursorColor: Colors.deepPurple,
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            _buildSectionHeader("Priests"),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 130,
+              child: filteredPriests.isEmpty
+                  ? const Center(child: Text("No priests found."))
+                  : ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: filteredPriests.map(_buildPriestCard).toList(),
+                    ),
+            ),
+            const SizedBox(height: 28),
+
+            _buildSectionHeader("Featured Priests"),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 180,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children:
+                    featuredPriests.map(_buildFeaturedPriestCard).toList(),
+              ),
+            ),
+            const SizedBox(height: 28),
+
+            _buildSectionHeader("Chapels"),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 180,
+              child: filteredChapels.isEmpty
+                  ? const Center(child: Text("No chapels found."))
+                  : ListView(
+                      scrollDirection: Axis.horizontal,
+                      children: filteredChapels.map(_buildChapelCard).toList(),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

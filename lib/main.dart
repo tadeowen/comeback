@@ -2,7 +2,6 @@ import 'firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 
 // Screens
@@ -14,7 +13,6 @@ import 'features/home/islam_home_screen.dart';
 import 'features/media/media_screen.dart';
 import 'features/prayer/prayer_screen.dart';
 import 'features/chat/chat_screen.dart';
-import 'features/home/landing_screen.dart';
 
 // Theme
 import 'core/theme.dart';
@@ -136,8 +134,10 @@ class _MainNavigationState extends State<MainNavigation> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.video_library), label: 'Media'),
-          BottomNavigationBarItem(icon: Icon(Icons.accessibility_new), label: 'Prayer'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.video_library), label: 'Media'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.accessibility_new), label: 'Prayer'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],

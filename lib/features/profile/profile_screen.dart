@@ -14,13 +14,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _ageController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  Future<void> _showEditDialog(
-      Map<String, dynamic> currentData, String userId) async {
-    _ageController.text = currentData['age']?.toString() ?? '';
-    _phoneController.text = currentData['phone'] ?? '';
+  final User? _user = FirebaseAuth.instance.currentUser;
 
+  Future<void> _signOut() async {
+    await FirebaseAuth.instance.signOut();
+    if (context.mounted) {
+      Navigator.of(context).pushReplacementNamed('/login');
+    }
+  }
 
-  Future<void> _confirmLogout() async {
+  Future<void> confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -64,38 +67,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  void _editProfile() {
-    if (_user == null || _profileData == null) return;
+  Future<void> _showEditDialog(
+      Map<String, dynamic> currentData, String userId) async {
+    _ageController.text = currentData['age']?.toString() ?? '';
+    _phoneController.text = currentData['phone'] ?? '';
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditProfileScreen(
-          userId: _user!.uid,
-          initialData: _profileData!,
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Profile'),
+        content: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: _ageController,
+                decoration: const InputDecoration(labelText: 'Age'),
+                keyboardType: TextInputType.number,
+                validator: (value) =>
+                    value!.isEmpty ? 'Please enter age' : null,
+              ),
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(labelText: 'Phone'),
+                keyboardType: TextInputType.phone,
+                validator: (value) =>
+                    value!.isEmpty ? 'Please enter phone number' : null,
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel')),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
           ElevatedButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(userId)
-                      .update({
-                    'age': int.parse(_ageController.text.trim()),
-                    'phone': _phoneController.text.trim(),
-                  });
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text('Profile updated successfully!')),
-                  );
-                }
-              },
-              child: const Text('Save')),
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(userId)
+                    .update({
+                  'age': int.parse(_ageController.text.trim()),
+                  'phone': _phoneController.text.trim(),
+                });
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Profile updated')),
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
         ],
       ),
     );
@@ -125,8 +150,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-
-            onPressed: _confirmLogout,
+            onPressed: confirmLogout,
             tooltip: 'Logout',
           ),
         ],
@@ -180,22 +204,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 12),
                 ListTile(
                   leading: const Icon(Icons.person),
-                  title: Text('Name'),
+                  title: const Text('Name'),
                   subtitle: Text(name),
                 ),
                 ListTile(
                   leading: const Icon(Icons.email),
-                  title: Text('Email'),
+                  title: const Text('Email'),
                   subtitle: Text(email),
                 ),
                 ListTile(
                   leading: const Icon(Icons.cake),
-                  title: Text('Age'),
+                  title: const Text('Age'),
                   subtitle: Text(age),
                 ),
                 ListTile(
                   leading: const Icon(Icons.phone),
-                  title: Text('Phone Number'),
+                  title: const Text('Phone Number'),
                   subtitle: Text(phone),
                 ),
                 const SizedBox(height: 20),
