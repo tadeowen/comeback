@@ -1,11 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Add intl for date formatting
 
 class ImamPrayerInboxScreen extends StatelessWidget {
   const ImamPrayerInboxScreen({super.key});
 
-  // 🔎 Get all prayer requests where imamId matches current user
+  // Get all prayer requests where imamId matches current user
   Stream<QuerySnapshot> getPrayerRequestsForCurrentImam() {
     final imamId = FirebaseAuth.instance.currentUser?.uid;
     debugPrint("📥 Current Imam UID: $imamId");
@@ -53,21 +54,39 @@ class ImamPrayerInboxScreen extends StatelessWidget {
 
               final message = data['message'] ?? '';
               final isPublic = data['visibility'] == 'Public';
+              final category = data['category'] ?? 'No category';
               final timestamp = (data['timestamp'] as Timestamp).toDate();
+              final formattedTime =
+                  DateFormat('dd MMM yyyy, hh:mm a').format(timestamp);
               final displayName = isPublic
                   ? "${data['studentName'] ?? 'Unnamed'}\n${data['studentEmail'] ?? ''}"
                   : "Anonymous";
 
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                elevation: 3,
                 child: ListTile(
-                  title: Text(message),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  title: Text(
+                    message,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
+                      Text("Category: $category",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w500, color: Colors.teal)),
+                      const SizedBox(height: 6),
                       Text("From: $displayName"),
-                      Text("Sent at: ${timestamp.toLocal()}"),
+                      const SizedBox(height: 4),
+                      Text("Sent at: $formattedTime",
+                          style: const TextStyle(fontSize: 12)),
                     ],
                   ),
                 ),

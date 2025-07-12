@@ -61,10 +61,18 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
   }
 }
 
-class FeaturedImamsHome extends StatelessWidget {
+class FeaturedImamsHome extends StatefulWidget {
   final String studentName;
 
   const FeaturedImamsHome({super.key, required this.studentName});
+
+  @override
+  State<FeaturedImamsHome> createState() => _FeaturedImamsHomeState();
+}
+
+class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchTerm = '';
 
   @override
   Widget build(BuildContext context) {
@@ -77,8 +85,6 @@ class FeaturedImamsHome extends StatelessWidget {
         children: [
           Text('🕌 Prayer Times (Today)', style: theme.titleMedium),
           const SizedBox(height: 8),
-
-          // Example prayer times card (replace with your actual prayer time widget if you have one)
           Card(
             color: Colors.green[50],
             child: const Padding(
@@ -97,12 +103,30 @@ class FeaturedImamsHome extends StatelessWidget {
           ),
 
           const SizedBox(height: 24),
-
           Text('🌟 Featured Imams', style: theme.titleMedium),
           const SizedBox(height: 8),
 
+          // 🔍 Search Field
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search Imams by name...',
+              prefixIcon: const Icon(Icons.search),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              filled: true,
+              fillColor: Colors.grey[100],
+            ),
+            onChanged: (value) {
+              setState(() => _searchTerm = value.toLowerCase().trim());
+            },
+          ),
+
+          const SizedBox(height: 12),
+
+          // 📡 Imam List
           SizedBox(
-            height: 150,
+            height: 170,
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
@@ -117,7 +141,16 @@ class FeaturedImamsHome extends StatelessWidget {
                   return const Text('No featured Imams found.');
                 }
 
-                final imams = snapshot.data!.docs;
+                final imams = snapshot.data!.docs.where((doc) {
+                  final data = doc.data()! as Map<String, dynamic>;
+                  final name = (data['name'] ?? '').toString().toLowerCase();
+                  return name.contains(_searchTerm);
+                }).toList();
+
+                if (imams.isEmpty) {
+                  return const Center(
+                      child: Text('No Imams match your search.'));
+                }
 
                 return ListView.builder(
                   scrollDirection: Axis.horizontal,
@@ -157,8 +190,6 @@ class FeaturedImamsHome extends StatelessWidget {
               },
             ),
           ),
-
-          // You can add more widgets below, like ayah or duas.
         ],
       ),
     );

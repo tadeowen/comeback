@@ -65,4 +65,4 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-apply plugin: 'com.google.gms.google-services'
+
