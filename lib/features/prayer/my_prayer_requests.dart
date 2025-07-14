@@ -96,8 +96,14 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
 
     if (check.docs.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('You have already rated this appointment.')),
+        SnackBar(
+          content: const Text('You have already rated this appointment.'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          backgroundColor: Colors.orange[800],
+        ),
       );
       return;
     }
@@ -105,39 +111,83 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
     showDialog(
       context: context,
       builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Rate the Imam'),
-          content: RatingBar.builder(
-            initialRating: 3,
-            minRating: 1,
-            maxRating: 5,
-            itemCount: 5,
-            itemBuilder: (context, _) =>
-                const Icon(Icons.star, color: Colors.amber),
-            onRatingUpdate: (value) {
-              ratingValue = value;
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
+        return Dialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          elevation: 10,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Rate the Imam',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.teal[800],
+                      ),
+                ),
+                const SizedBox(height: 20),
+                RatingBar.builder(
+                  initialRating: 3,
+                  minRating: 1,
+                  maxRating: 5,
+                  itemCount: 5,
+                  itemSize: 40,
+                  glowColor: Colors.amber[300],
+                  unratedColor: Colors.grey[300],
+                  itemBuilder: (context, _) =>
+                      const Icon(Icons.star, color: Colors.amber),
+                  onRatingUpdate: (value) {
+                    ratingValue = value;
+                  },
+                ),
+                const SizedBox(height: 30),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.grey[700],
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 25, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(color: Colors.grey[400]!),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        await _firestore.collection('imamRatings').add({
+                          'imamId': imamId,
+                          'studentId': currentUserId,
+                          'appointmentId': appointmentId,
+                          'rating': ratingValue,
+                          'timestamp': Timestamp.now(),
+                        });
+                        await prayerRef.update({'rated': true});
+                        Navigator.pop(ctx);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal[700],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 25, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 3,
+                      ),
+                      child: const Text('Submit'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            ElevatedButton(
-              onPressed: () async {
-                await _firestore.collection('imamRatings').add({
-                  'imamId': imamId,
-                  'studentId': currentUserId,
-                  'appointmentId': appointmentId,
-                  'rating': ratingValue,
-                  'timestamp': Timestamp.now(),
-                });
-                await prayerRef.update({'rated': true});
-                Navigator.pop(ctx);
-              },
-              child: const Text('Submit'),
-            )
-          ],
+          ),
         );
       },
     );
@@ -148,14 +198,46 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
     final userId = currentUserId;
     if (userId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("My Prayer Requests")),
-        body: const Center(
-            child: Text("You must be logged in to view requests.")),
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: const Text("My Prayer Requests"),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.teal[800],
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 50, color: Colors.teal[800]),
+              const SizedBox(height: 20),
+              Text(
+                "You must be logged in to view requests.",
+                style: TextStyle(
+                  fontSize: 18,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text("My Prayer Requests")),
+      backgroundColor: Colors.grey[50],
+      appBar: AppBar(
+        title: const Text("My Prayer Requests"),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.teal[800],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () => setState(() {}),
+          ),
+        ],
+      ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _firestore
             .collection('dua_request')
@@ -164,10 +246,40 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[800]!),
+              ),
+            );
           }
           if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 50, color: Colors.red[800]),
+                  const SizedBox(height: 20),
+                  Text(
+                    "Error loading requests",
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           final docs = snapshot.data?.docs ?? [];
@@ -177,8 +289,36 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
             assignAppointmentIfMissing(doc, data);
           }
 
+          if (docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.inbox_outlined, size: 80, color: Colors.teal[300]),
+                  const SizedBox(height: 20),
+                  Text(
+                    "No prayer requests yet",
+                    style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Your prayer requests will appear here",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
           return ListView.builder(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             itemCount: docs.length,
             itemBuilder: (context, index) {
               final doc = docs[index];
@@ -207,76 +347,269 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
                   ? "${data['studentName'] ?? 'Unknown'}\n${data['studentEmail'] ?? ''}"
                   : 'Anonymous';
 
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 3,
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(message,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.w600, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 4,
-                        children: [
-                          Chip(
-                            label: Text("Category: $category"),
-                            backgroundColor: Colors.teal.shade100,
-                            labelStyle: const TextStyle(fontSize: 12),
-                          ),
-                          Chip(
-                            label: Text("Visibility: $visibility"),
-                            backgroundColor: visibility == 'Public'
-                                ? Colors.green.shade100
-                                : Colors.grey.shade300,
-                            labelStyle: const TextStyle(fontSize: 12),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text("From: $senderInfo"),
-                      const SizedBox(height: 6),
-                      Text("Sent at: $sentFormatted",
-                          style: const TextStyle(fontSize: 12)),
-                      const SizedBox(height: 6),
-                      Text("Appointment: $appointmentFormatted",
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: appointmentTime != null
-                                  ? Colors.green
-                                  : Colors.red)),
-                      const SizedBox(height: 10),
-                      if (appointmentTime != null &&
-                          DateTime.now().isAfter(appointmentTime) &&
-                          !hasRated &&
-                          imamId != null)
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: ElevatedButton(
-                            onPressed: () => showRatingDialog(
-                                imamId, doc.reference, appointmentId),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                            ),
-                            child: const Text("Rate Imam"),
-                          ),
+              return FutureBuilder<DocumentSnapshot>(
+                future: imamId != null
+                    ? _firestore.collection('users').doc(imamId).get()
+                    : null,
+                builder: (context, imamSnapshot) {
+                  String imamName = 'No Imam assigned';
+                  if (imamSnapshot.hasData && imamSnapshot.data!.exists) {
+                    final imamData =
+                        imamSnapshot.data!.data() as Map<String, dynamic>?;
+                    if (imamData != null && imamData['name'] != null) {
+                      imamName = imamData['name'] as String;
+                    }
+                  }
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 4),
                         ),
-                    ],
-                  ),
-                ),
+                      ],
+                    ),
+                    child: Card(
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(15),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: Colors.teal[400],
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        message,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16,
+                                          height: 1.4,
+                                        ),
+                                        maxLines: 3,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        sentFormatted,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.teal.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: Colors.teal.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      category,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.teal[800],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: visibility == 'Public'
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.grey.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(
+                                        color: visibility == 'Public'
+                                            ? Colors.green.withOpacity(0.3)
+                                            : Colors.grey.withOpacity(0.3),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      visibility,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: visibility == 'Public'
+                                            ? Colors.green[800]
+                                            : Colors.grey[800],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (imamName != 'No Imam assigned') ...[
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: Colors.blue.withOpacity(0.3),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        imamName,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: Colors.blue[800],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Colors.grey[200]!,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.person_outline,
+                                        size: 16,
+                                        color: Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          "From: $senderInfo",
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey[700],
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        appointmentTime != null
+                                            ? Icons.calendar_today_outlined
+                                            : Icons.calendar_today,
+                                        size: 16,
+                                        color: appointmentTime != null
+                                            ? Colors.teal[600]
+                                            : Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          appointmentFormatted,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: appointmentTime != null
+                                                ? Colors.teal[800]
+                                                : Colors.grey[700],
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (appointmentTime != null &&
+                                DateTime.now().isAfter(appointmentTime) &&
+                                !hasRated &&
+                                imamId != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: ElevatedButton(
+                                    onPressed: () => showRatingDialog(
+                                        imamId, doc.reference, appointmentId),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.teal[700],
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 24, vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      elevation: 2,
+                                      shadowColor: Colors.teal.withOpacity(0.3),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.star_rate_rounded, size: 18),
+                                        SizedBox(width: 8),
+                                        Text("Rate Imam"),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           );
