@@ -99,8 +99,9 @@ class ImamAppointmentsListScreen extends StatelessWidget {
                           context: context,
                           initialTime: selectedTime,
                         );
-                        if (picked != null)
+                        if (picked != null) {
                           setState(() => selectedTime = picked);
+                        }
                       },
                       child: Text("Pick Time: ${selectedTime.format(context)}"),
                     ),

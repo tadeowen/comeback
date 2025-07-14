@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../media/quran_page.dart';
 import '../chat/islam_chat_screen.dart';
 import '../prayer/islam_prayer_request.dart';
-// import '../profile/islam_profile_screen.dart'; // Optional
 
 class IslamHomeScreen extends StatefulWidget {
   final String studentName;
@@ -16,7 +16,6 @@ class IslamHomeScreen extends StatefulWidget {
 
 class _IslamHomeScreenState extends State<IslamHomeScreen> {
   int _currentIndex = 0;
-
   late final List<Widget> _pages;
 
   @override
@@ -28,7 +27,6 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
       const IslamPrayerRequest(),
       const Center(child: Text("💡 Hadith")),
       const IslamChatScreen(),
-      // MuslimSettingsScreen(studentName: widget.studentName), // Your real settings screen here
       const Center(child: Text("Settings Placeholder")),
     ];
   }
@@ -48,7 +46,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Qur’an'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Quran'),
           BottomNavigationBarItem(
               icon: Icon(Icons.favorite), label: 'Prayer Request'),
           BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Hadith'),
@@ -101,12 +99,9 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               ),
             ),
           ),
-
           const SizedBox(height: 24),
           Text('🌟 Featured Imams', style: theme.titleMedium),
           const SizedBox(height: 8),
-
-          // 🔍 Search Field
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -121,76 +116,330 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               setState(() => _searchTerm = value.toLowerCase().trim());
             },
           ),
-
           const SizedBox(height: 12),
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .where('role', isEqualTo: 'Imam')
+                .where('religion', isEqualTo: 'Islam')
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text('No featured Imams found.'));
+              }
 
-          // 📡 Imam List
-          SizedBox(
-            height: 170,
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .where('role', isEqualTo: 'Imam')
-                  .where('religion', isEqualTo: 'Islam')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Text('No featured Imams found.');
-                }
+              final imams = snapshot.data!.docs.where((doc) {
+                final data = doc.data()! as Map<String, dynamic>;
+                final name = (data['name'] ?? '').toString().toLowerCase();
+                return name.contains(_searchTerm);
+              }).toList();
 
-                final imams = snapshot.data!.docs.where((doc) {
-                  final data = doc.data()! as Map<String, dynamic>;
-                  final name = (data['name'] ?? '').toString().toLowerCase();
-                  return name.contains(_searchTerm);
-                }).toList();
+              if (imams.isEmpty) {
+                return const Center(child: Text('No Imams match your search.'));
+              }
 
-                if (imams.isEmpty) {
-                  return const Center(
-                      child: Text('No Imams match your search.'));
-                }
-
-                return ListView.builder(
+              return SizedBox(
+                height: 220,
+                child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: imams.length,
                   itemBuilder: (context, index) {
-                    final imam = imams[index].data()! as Map<String, dynamic>;
+                    final imamDoc = imams[index];
+                    final imam = imamDoc.data()! as Map<String, dynamic>;
                     final name = imam['name'] ?? 'Unnamed Imam';
                     final picUrl = imam['profilePicUrl'] as String?;
 
-                    return Container(
-                      width: 120,
-                      margin: const EdgeInsets.only(right: 12),
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 45,
-                            backgroundImage: picUrl != null && picUrl.isNotEmpty
-                                ? NetworkImage(picUrl)
-                                : const AssetImage(
-                                        'assets/default_imam_avatar.png')
-                                    as ImageProvider,
-                            backgroundColor: Colors.grey[300],
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ImamDetailScreen(
+                              imamId: imamDoc.id,
+                              imamName: name,
+                              profilePicUrl: picUrl,
+                            ),
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            name,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                        );
+                      },
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('imamRatings')
+                            .where('imamId', isEqualTo: imamDoc.id)
+                            .snapshots(),
+                        builder: (context, ratingSnapshot) {
+                          if (!ratingSnapshot.hasData) {
+                            return Container(
+                              width: 140,
+                              margin: const EdgeInsets.only(right: 12),
+                              child: const Center(
+                                  child: CircularProgressIndicator()),
+                            );
+                          }
+
+                          final ratings = ratingSnapshot.data!.docs;
+                          final totalRatings = ratings.length;
+                          double avgRating = 0;
+
+                          if (totalRatings > 0) {
+                            final totalStars = ratings.fold(0, (sum, doc) {
+                              final rating = doc['rating'] as num;
+                              return sum + rating.toInt();
+                            });
+                            avgRating = totalStars / totalRatings;
+                          }
+
+                          return Container(
+                            width: 140,
+                            margin: const EdgeInsets.only(right: 12),
+                            child: Column(
+                              children: [
+                                CircleAvatar(
+                                  radius: 45,
+                                  backgroundImage: picUrl != null &&
+                                          picUrl.isNotEmpty
+                                      ? NetworkImage(picUrl)
+                                      : const AssetImage(
+                                              'assets/default_imam_avatar.png')
+                                          as ImageProvider,
+                                  backgroundColor: Colors.grey[300],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.star,
+                                        color: Colors.amber, size: 16),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      avgRating.toStringAsFixed(1),
+                                      style: const TextStyle(fontSize: 14),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '($totalRatings)',
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
                       ),
                     );
                   },
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class ImamDetailScreen extends StatelessWidget {
+  final String imamId;
+  final String imamName;
+  final String? profilePicUrl;
+
+  const ImamDetailScreen({
+    super.key,
+    required this.imamId,
+    required this.imamName,
+    this.profilePicUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(imamName),
+        backgroundColor: Colors.green[700],
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('imamRatings')
+            .where('imamId', isEqualTo: imamId)
+            .snapshots(),
+        builder: (context, ratingSnapshot) {
+          if (!ratingSnapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final ratings = ratingSnapshot.data!.docs;
+          final totalReviews = ratings.length;
+          double averageRating = 0;
+
+          if (totalReviews > 0) {
+            final totalStars = ratings.fold(0, (sum, doc) {
+              final rating = doc['rating'] as num;
+              return sum + rating.toInt();
+            });
+            averageRating = totalStars / totalReviews;
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Imam Profile Section
+                Center(
+                  child: Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 60,
+                        backgroundImage: profilePicUrl != null &&
+                                profilePicUrl!.isNotEmpty
+                            ? NetworkImage(profilePicUrl!)
+                            : const AssetImage('assets/default_imam_avatar.png')
+                                as ImageProvider,
+                        backgroundColor: Colors.grey[300],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        imamName,
+                        style: const TextStyle(
+                            fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Ratings Summary Section
+                Column(
+                  children: [
+                    Text(
+                      averageRating.toStringAsFixed(1),
+                      style: const TextStyle(
+                          fontSize: 48, fontWeight: FontWeight.bold),
+                    ),
+                    RatingBarIndicator(
+                      rating: averageRating,
+                      itemBuilder: (context, _) => const Icon(
+                        Icons.star,
+                        color: Colors.amber,
+                      ),
+                      itemCount: 5,
+                      itemSize: 32.0,
+                      direction: Axis.horizontal,
+                    ),
+                    Text(
+                      '$totalReviews review${totalReviews != 1 ? "s" : ""}',
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(),
+                  ],
+                ),
+
+                // Individual Reviews Section
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Text(
+                    'User Reviews',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                if (totalReviews == 0)
+                  const Center(child: Text('No reviews yet'))
+                else
+                  ...ratings.map((ratingDoc) {
+                    final rating = ratingDoc.data() as Map<String, dynamic>;
+                    final stars = (rating['rating'] as num).toInt();
+                    final timestamp =
+                        (rating['timestamp'] as Timestamp).toDate();
+                    final reviewerId = rating['studentId'] as String;
+
+                    return FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(reviewerId)
+                          .get(),
+                      builder: (context, userSnapshot) {
+                        String reviewerName = 'Anonymous';
+                        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+                          final userData = userSnapshot.data!.data()
+                              as Map<String, dynamic>?;
+                          if (userData != null && userData['name'] != null) {
+                            reviewerName = userData['name'] as String;
+                          }
+                        }
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: Colors.grey[300],
+                                      child: Text(
+                                        reviewerName
+                                            .substring(0, 1)
+                                            .toUpperCase(),
+                                        style: const TextStyle(
+                                            color: Colors.black),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      reviewerName,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                    (i) => Icon(
+                                      Icons.star,
+                                      color: i < stars
+                                          ? Colors.amber
+                                          : Colors.grey,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Reviewed on ${timestamp.toLocal().toString().split(' ')[0]}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }).toList(),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
