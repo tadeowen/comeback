@@ -207,8 +207,6 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
     }
   }
 
-// ... (keep all imports and other code above the sendPrayerRequest method the same)
-
   Future<void> sendPrayerRequest() async {
     if (_isSending) return;
 
@@ -241,7 +239,7 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
       String confirmationMsg = "Prayer request sent successfully!";
       bool showAppointmentDetails = false;
 
-      // If no specific imam is selected, find the best imam for the selected category
+      // If "Any available Imam" selected AND category is chosen
       if (targetImamId == null && selectedCategory != null) {
         // Get all imams who handle this category
         final categoryImams = await FirebaseFirestore.instance
@@ -343,7 +341,7 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
       final requestData = {
         'studentId': user.uid,
         'imamId': targetImamId,
-        'imamName': targetImamName, // Store imam name for display
+        'imamName': targetImamName,
         'message': message,
         'timestamp': Timestamp.now(),
         'visibility': visibilityOption,
@@ -399,7 +397,6 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
     }
   }
 
-// ... (keep all other code below the same)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
