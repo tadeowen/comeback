@@ -16,17 +16,13 @@ import 'features/chat/chat_screen.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 
-
 // Theme
 import 'core/theme.dart';
 import 'core/themeNotifier.dart';
 
-
-
 // 🛠️ Initialize Notifications Plugin
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,7 +37,6 @@ Future<void> main() async {
     debugPrintStack(stackTrace: stack);
   }
 
-
   // ⏰ Local Notifications Setup
   tz.initializeTimeZones();
   const AndroidInitializationSettings initializationSettingsAndroid =
@@ -51,7 +46,6 @@ Future<void> main() async {
       InitializationSettings(android: initializationSettingsAndroid);
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-
 
   runApp(
     ChangeNotifierProvider(
@@ -98,10 +92,7 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
   String studentName = 'User';
-
-  String religion = 'Christianity'; // Default
-
-  String religion = 'Christianity';
+  String religion = 'Christianity'; // Combined the duplicate declarations
   bool _isLoading = true;
 
   @override
@@ -113,7 +104,9 @@ class _MainNavigationState extends State<MainNavigation> {
 
     if (args != null) {
       studentName = args['name'] ?? 'User';
-      religion = args['religion'] ?? 'Christianity';
+      setState(() {
+        religion = args['religion'] ?? 'Christianity';
+      });
     }
 
     setState(() => _isLoading = false);
@@ -132,9 +125,6 @@ class _MainNavigationState extends State<MainNavigation> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
-
-    // Show correct home screen based on religion
 
     // Choose correct Home screen
     final Widget home = (religion == 'Islam')

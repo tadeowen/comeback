@@ -1,57 +1,4 @@
-<<<<<<< HEAD
-name: comeback
-description: "A religious Flutter app for prayer requests, gospel media, chat, and spiritual support."
-publish_to: 'none'
 
-version: 1.0.0+1
-
-environment:
-  sdk: '>=3.3.0 <4.0.0'
-
-dependencies:
-  flutter:
-    sdk: flutter
-
-  image_picker: ^1.1.2
-  firebase_auth: ^5.6.2
-  firebase_analytics: ^11.0.1
-  firebase_crashlytics: ^4.3.9
-
-  intl: ^0.18.1
-
-
-  firebase_core: ^3.15.1
-
-  cloud_firestore: ^5.6.11
-  firebase_storage: ^12.4.9
-
-  timezone: ^0.10.1
-
-  cupertino_icons: ^1.0.8
-  
-  provider: ^6.1.2
-  flutter_spinkit: ^5.2.0
-  google_fonts: ^6.2.0
-  flutter_local_notifications: ^19.3.0
-
-dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_lints: 5.0.0
-
-flutter:
-  uses-material-design: true
-
-  assets:
-    - assets/images/
-
-# fonts:
-#   - family: Poppins
-#     fonts:
-#       - asset: assets/fonts/Poppins-Regular.ttf
-#       - asset: assets/fonts/Poppins-Bold.ttf
-#         weight: 700
-=======
 name: comeback
 description: "A religious Flutter app for prayer requests, gospel media, chat, and spiritual support."
 publish_to: 'none'
@@ -105,4 +52,4 @@ flutter:
 #       - asset: assets/fonts/Poppins-Regular.ttf
 #       - asset: assets/fonts/Poppins-Bold.ttf
 #         weight: 700
->>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
+
