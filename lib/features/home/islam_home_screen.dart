@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import '../media/quran_page.dart';
+import '../chat/islam_chat_screen.dart';
+import '../prayer/islam_prayer_request.dart';
+// import '../profile/islam_profile_screen.dart'; // Optional
+
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import '../media/quran_page.dart';
 import '../chat/islam_chat_screen.dart';
 import '../prayer/islam_prayer_request.dart';
+
 
 class IslamHomeScreen extends StatefulWidget {
   final String studentName;
@@ -16,6 +23,10 @@ class IslamHomeScreen extends StatefulWidget {
 
 class _IslamHomeScreenState extends State<IslamHomeScreen> {
   int _currentIndex = 0;
+<<<<<<< HEAD
+
+=======
+>>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
   late final List<Widget> _pages;
 
   @override
@@ -27,6 +38,10 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
       const IslamPrayerRequest(),
       const Center(child: Text("💡 Hadith")),
       const IslamChatScreen(),
+<<<<<<< HEAD
+      // MuslimSettingsScreen(studentName: widget.studentName), // Your real settings screen here
+=======
+>>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
       const Center(child: Text("Settings Placeholder")),
     ];
   }
@@ -46,7 +61,11 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+<<<<<<< HEAD
+          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Qur’an'),
+=======
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Quran'),
+>>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
           BottomNavigationBarItem(
               icon: Icon(Icons.favorite), label: 'Prayer Request'),
           BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Hadith'),
@@ -99,9 +118,18 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               ),
             ),
           ),
+<<<<<<< HEAD
+
           const SizedBox(height: 24),
           Text('🌟 Featured Imams', style: theme.titleMedium),
           const SizedBox(height: 8),
+
+          // 🔍 Search Field
+=======
+          const SizedBox(height: 24),
+          Text('🌟 Featured Imams', style: theme.titleMedium),
+          const SizedBox(height: 8),
+>>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
@@ -116,6 +144,76 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               setState(() => _searchTerm = value.toLowerCase().trim());
             },
           ),
+<<<<<<< HEAD
+
+          const SizedBox(height: 12),
+
+          // 📡 Imam List
+          SizedBox(
+            height: 170,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .where('role', isEqualTo: 'Imam')
+                  .where('religion', isEqualTo: 'Islam')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Text('No featured Imams found.');
+                }
+
+                final imams = snapshot.data!.docs.where((doc) {
+                  final data = doc.data()! as Map<String, dynamic>;
+                  final name = (data['name'] ?? '').toString().toLowerCase();
+                  return name.contains(_searchTerm);
+                }).toList();
+
+                if (imams.isEmpty) {
+                  return const Center(
+                      child: Text('No Imams match your search.'));
+                }
+
+                return ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: imams.length,
+                  itemBuilder: (context, index) {
+                    final imam = imams[index].data()! as Map<String, dynamic>;
+                    final name = imam['name'] ?? 'Unnamed Imam';
+                    final picUrl = imam['profilePicUrl'] as String?;
+
+                    return Container(
+                      width: 120,
+                      margin: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 45,
+                            backgroundImage: picUrl != null && picUrl.isNotEmpty
+                                ? NetworkImage(picUrl)
+                                : const AssetImage(
+                                        'assets/default_imam_avatar.png')
+                                    as ImageProvider,
+                            backgroundColor: Colors.grey[300],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+=======
           const SizedBox(height: 12),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -244,12 +342,15 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
                 ),
               );
             },
+>>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
           ),
         ],
       ),
     );
   }
 }
+<<<<<<< HEAD
+=======
 
 class ImamDetailScreen extends StatelessWidget {
   final String imamId;
@@ -444,3 +545,4 @@ class ImamDetailScreen extends StatelessWidget {
     );
   }
 }
+>>>>>>> 7e0f36a65e2080f289d0af718b5635cd54c3bc7c

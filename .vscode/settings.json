@@ -1,3 +1,8 @@
 {
+ HEAD
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "cmake.sourceDirectory": "C:/Users/user/Downloads/comeback-main (4)/comeback-main/windows/flutter"
+
     "java.configuration.updateBuildConfiguration": "automatic"
+ 7e0f36a65e2080f289d0af718b5635cd54c3bc7c
 }
