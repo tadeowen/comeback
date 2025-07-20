@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../media/quran.dart';
 
 import '../media/quran_page.dart';
 import '../chat/islam_chat_screen.dart';
@@ -7,10 +8,6 @@ import '../prayer/islam_prayer_request.dart';
 // import '../profile/islam_profile_screen.dart'; // Optional
 
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
-import '../media/quran_page.dart';
-import '../chat/islam_chat_screen.dart';
-import '../prayer/islam_prayer_request.dart';
-
 
 class IslamHomeScreen extends StatefulWidget {
   final String studentName;
@@ -30,7 +27,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
     super.initState();
     _pages = [
       FeaturedImamsHome(studentName: widget.studentName),
-      const QuranPage(),
+      const QuranHomePage(),
       const IslamPrayerRequest(),
       const Center(child: Text("💡 Hadith")),
       const IslamChatScreen(),
@@ -125,7 +122,7 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               setState(() => _searchTerm = value.toLowerCase().trim());
             },
           ),
-      const SizedBox(height: 12),
+          const SizedBox(height: 12),
           StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
                 .collection('users')
@@ -453,4 +450,3 @@ class ImamDetailScreen extends StatelessWidget {
     );
   }
 }
-

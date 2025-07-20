@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../chat/imam_chat_screen.dart';
-import '../prayer/imam_prayer_inbox.dart';
 import '../media/appoint.dart';
 import '../media/imam_bar_graph.dart';
+import '../media/quran.dart';
 
 class ImamHomeScreen extends StatefulWidget {
   final String imamName;
@@ -22,7 +22,7 @@ class _ImamHomeScreenState extends State<ImamHomeScreen> {
     super.initState();
     _pages = [
       _buildHomePage(),
-      const Center(child: Text("📖 Quran Page")),
+      const QuranHomePage(),
       const ImamChatScreen(),
       const ImamHadithSetupScreen(),
       const ImamRatingAnalyticsScreen(),
