@@ -1,3 +1,4 @@
+
 name: comeback
 description: "A religious Flutter app for prayer requests, gospel media, chat, and spiritual support."
 publish_to: 'none'
@@ -14,6 +15,7 @@ dependencies:
   firebase_auth: ^5.6.2
   firebase_analytics: ^11.0.1
   firebase_crashlytics: ^4.3.9
+  flutter_cache_manager: ^3.3.0
   flutter_rating_bar: ^4.0.0
   intl: ^0.18.1
   firebase_core: ^3.15.1
@@ -25,6 +27,16 @@ dependencies:
   flutter_spinkit: ^5.2.0
   google_fonts: ^6.2.0
   flutter_local_notifications: ^19.3.0
+  syncfusion_flutter_charts: ^30.1.40
+  http: ^1.0.0
+  shared_preferences: ^2.0.15
+  connectivity_plus: ^3.0.3 
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  
+  shimmer: ^2.0.0
+
 
 dev_dependencies:
   flutter_test:
@@ -34,4 +46,4 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
+    - assets/images/ 

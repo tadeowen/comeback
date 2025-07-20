@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../chat/imam_chat_screen.dart';
 import '../prayer/imam_prayer_inbox.dart';
 import '../media/appoint.dart';
+import '../media/imam_bar_graph.dart';
 
 class ImamHomeScreen extends StatefulWidget {
   final String imamName;
@@ -24,7 +25,7 @@ class _ImamHomeScreenState extends State<ImamHomeScreen> {
       const Center(child: Text("📖 Quran Page")),
       const ImamChatScreen(),
       const ImamHadithSetupScreen(),
-      const ImamPrayerInboxScreen(),
+      const ImamRatingAnalyticsScreen(),
       const Center(child: Text("👤 Profile Screen")),
     ];
   }
@@ -98,8 +99,7 @@ class _ImamHomeScreenState extends State<ImamHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.book), label: "Quran"),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: "Chat"),
           BottomNavigationBarItem(icon: Icon(Icons.alarm), label: "Setup"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.star), label: "Dua requests"),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: "Status"),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: "Profile"),
         ],
       ),
