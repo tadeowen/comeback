@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final VoidCallback? onLogout;
+
+  const ProfileScreen({super.key, this.onLogout});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -15,15 +18,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _phoneController = TextEditingController();
 
   final User? _user = FirebaseAuth.instance.currentUser;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _ageController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   Future<void> _signOut() async {
-    await FirebaseAuth.instance.signOut();
-    if (mounted) {
-      Navigator.of(context).pushReplacementNamed('/login');
+    try {
+      setState(() => _isLoading = true);
+      await FirebaseAuth.instance.signOut();
+
+      // Call the onLogout callback if provided
+      widget.onLogout?.call();
+
+      if (mounted) {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Logout failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  Future<void> confirmLogout() async {
+  Future<void> _confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -44,14 +72,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(
               foregroundColor: Colors.white,
               backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             child: const Text('Logout'),
           ),
@@ -73,26 +100,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Edit Profile'),
-        content: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _ageController,
-                decoration: const InputDecoration(labelText: 'Age'),
-                keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter age' : null,
-              ),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter phone number' : null,
-              ),
-            ],
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: _ageController,
+                  decoration: const InputDecoration(
+                    labelText: 'Age',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter age';
+                    }
+                    if (int.tryParse(value) == null) {
+                      return 'Please enter a valid number';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter phone number';
+                    }
+                    if (value.length < 10) {
+                      return 'Phone number too short';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -103,18 +153,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ElevatedButton(
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(userId)
-                    .update({
-                  'age': int.parse(_ageController.text.trim()),
-                  'phone': _phoneController.text.trim(),
-                });
-                if (mounted) {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profile updated')),
-                  );
+                try {
+                  setState(() => _isLoading = true);
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .update({
+                    'age': int.parse(_ageController.text.trim()),
+                    'phone': _phoneController.text.trim(),
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profile updated successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Update failed: ${e.toString()}'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() => _isLoading = false);
+                  }
                 }
               }
             },
@@ -125,11 +195,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _ageController.dispose();
-    _phoneController.dispose();
-    super.dispose();
+  Widget _buildInfoCard(String title, String value, IconData icon) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.deepPurple),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    value,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -137,8 +237,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final String? userId = _user?.uid;
 
     if (userId == null) {
-      return const Scaffold(
-        body: Center(child: Text('User not logged in')),
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 16),
+              const Text(
+                'User not logged in',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () =>
+                    Navigator.pushReplacementNamed(context, '/login'),
+                child: const Text('Go to Login'),
+              ),
+            ],
+          ),
+        ),
       );
     }
 
@@ -148,8 +266,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.deepPurple,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: confirmLogout,
+            icon: _isLoading
+                ? const CircularProgressIndicator(color: Colors.white)
+                : const Icon(Icons.logout),
+            onPressed: _isLoading ? null : _confirmLogout,
             tooltip: 'Logout',
           ),
         ],
@@ -161,7 +281,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error: ${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+            );
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -169,77 +302,102 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('No user data found.'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.person_off, size: 48, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'No user data found',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Go Back'),
+                  ),
+                ],
+              ),
+            );
           }
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
-          final name = data['name'] ?? 'No Name';
-          final email = data['email'] ?? 'No Email';
+          final name = data['name'] ?? 'Not provided';
+          final email = data['email'] ?? 'Not provided';
           final age = data['age']?.toString() ?? 'Not set';
           final phone = data['phone'] ?? 'Not set';
           final confirmationCode = data['confirmationCode'];
           final appointment = data['appointment'];
+          final updatedAt = data['updatedAt'] as Timestamp?;
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListView(
+          String formattedDate = 'Never updated';
+          if (updatedAt != null) {
+            formattedDate =
+                DateFormat('MMM dd, yyyy - hh:mm a').format(updatedAt.toDate());
+          }
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Profile Info',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    Text(
+                      'Personal Information',
+                      style: Theme.of(context).textTheme.titleLarge,
                     ),
                     ElevatedButton.icon(
-                      icon: const Icon(Icons.edit),
+                      icon: const Icon(Icons.edit, size: 20),
                       label: const Text('Edit'),
-                      onPressed: () => _showEditDialog(data, userId),
-                    )
+                      onPressed: _isLoading
+                          ? null
+                          : () => _showEditDialog(data, userId),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Name'),
-                  subtitle: Text(name),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.email),
-                  title: const Text('Email'),
-                  subtitle: Text(email),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.cake),
-                  title: const Text('Age'),
-                  subtitle: Text(age),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.phone),
-                  title: const Text('Phone Number'),
-                  subtitle: Text(phone),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
+                _buildInfoCard('Full Name', name, Icons.person),
+                _buildInfoCard('Email Address', email, Icons.email),
+                _buildInfoCard('Age', age, Icons.cake),
+                _buildInfoCard('Phone Number', phone, Icons.phone),
+                const SizedBox(height: 24),
                 const Divider(),
                 const Text(
-                  'Prayer Confirmation',
+                  'Prayer Information',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 if (confirmationCode != null)
-                  ListTile(
-                    leading: const Icon(Icons.verified_user, color: Colors.green),
-                    title: const Text('Confirmation Code'),
-                    subtitle: Text(confirmationCode),
+                  _buildInfoCard(
+                    'Confirmation Code',
+                    confirmationCode,
+                    Icons.verified_user,
                   ),
                 if (appointment != null)
-                  ListTile(
-                    leading: const Icon(Icons.calendar_today, color: Colors.teal),
-                    title: const Text('Appointment Date'),
-                    subtitle: Text(appointment.toString()),
+                  _buildInfoCard(
+                    'Appointment Date',
+                    DateFormat('MMM dd, yyyy')
+                        .format((appointment as Timestamp).toDate()),
+                    Icons.calendar_today,
                   ),
                 if (confirmationCode == null && appointment == null)
-                  const Text('No prayer request submitted yet.'),
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'No prayer request submitted yet.',
+                      style: TextStyle(fontStyle: FontStyle.italic),
+                    ),
+                  ),
+                const SizedBox(height: 24),
+                const Divider(),
+                _buildInfoCard(
+                  'Last Updated',
+                  formattedDate,
+                  Icons.update,
+                ),
               ],
             ),
           );

@@ -29,10 +29,10 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
   bool _isSending = false;
 
   // Color Scheme
-  final Color _primaryColor = const Color(0xFF2E7D32); // Deep Islamic Green
-  final Color _secondaryColor = const Color(0xFF81C784); // Light Green
-  final Color _accentColor = const Color(0xFFFFD54F); // Gold Accent
-  final Color _backgroundColor = const Color(0xFFF5F5F5); // Light background
+  final Color _primaryColor = const Color(0xFF2E7D32);
+  final Color _secondaryColor = const Color(0xFF81C784);
+  final Color _accentColor = const Color(0xFFFFD54F);
+  final Color _backgroundColor = const Color(0xFFF5F5F5);
   final Color _cardColor = Colors.white;
   final Color _textColor = const Color(0xFF333333);
   final Color _hintColor = const Color(0xFF757575);
@@ -52,6 +52,27 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
     const InitializationSettings initializationSettings =
         InitializationSettings(android: initializationSettingsAndroid);
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  }
+
+  Future<void> _recordUserSelection({
+    required String type,
+    required String selectedId,
+    required String selectedName,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('user_selections').add({
+        'userId': user.uid,
+        'type': type,
+        'selectedId': selectedId,
+        'selectedName': selectedName,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      debugPrint('Error recording selection: $e');
+    }
   }
 
   Future<void> fetchImams() async {
@@ -210,9 +231,9 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
 
   Future<void> sendPrayerRequest() async {
     if (_isSending) return;
-    
+
     setState(() => _isSending = true);
-    
+
     final message = _messageController.text.trim();
 
     if (message.isEmpty) {
@@ -391,8 +412,9 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
           await FirebaseFirestore.instance.collection('appointments').add({
         'studentId': user.uid,
         'imamId': targetImamId,
-        'appointmentDate':
-            appointmentDate != null ? Timestamp.fromDate(appointmentDate) : null,
+        'appointmentDate': appointmentDate != null
+            ? Timestamp.fromDate(appointmentDate)
+            : null,
         'rated': false,
       });
 

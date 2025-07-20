@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 class CustomBottomNav extends StatelessWidget {
@@ -34,8 +33,6 @@ class CustomBottomNav extends StatelessWidget {
   }
 }
 
-import 'package:flutter/material.dart';
-
 class CustomBottomNav extends StatelessWidget {
   final int selectedIndex;
   final Function(int) onTap;
@@ -68,4 +65,3 @@ class CustomBottomNav extends StatelessWidget {
     );
   }
 }
-

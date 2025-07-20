@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../media/quran.dart';
 
-import '../media/quran_page.dart';
 import '../chat/islam_chat_screen.dart';
 import '../prayer/islam_prayer_request.dart';
 // import '../profile/islam_profile_screen.dart'; // Optional

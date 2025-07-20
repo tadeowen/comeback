@@ -1,4 +1,3 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -50,12 +49,14 @@ class FirebaseService {
   User? getCurrentUser() => auth.currentUser;
 
   /// Get Firestore user profile stream (real-time)
-  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserProfileStream(String uid) {
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserProfileStream(
+      String uid) {
     return firestore.collection('users').doc(uid).snapshots();
   }
 
   /// Get user profile once (non-stream)
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserProfileOnce(String uid) async {
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserProfileOnce(
+      String uid) async {
     return await firestore.collection('users').doc(uid).get();
   }
 
@@ -69,12 +70,14 @@ class FirebaseService {
   }
 
   /// Add new appointment using a transaction
-  Future<void> addAppointment(String uid, Map<String, dynamic> appointment) async {
+  Future<void> addAppointment(
+      String uid, Map<String, dynamic> appointment) async {
     final docRef = firestore.collection('users').doc(uid);
     try {
       await firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
-        final currentAppointments = List<dynamic>.from(snapshot.get('appointments') ?? []);
+        final currentAppointments =
+            List<dynamic>.from(snapshot.get('appointments') ?? []);
         currentAppointments.add(appointment);
         transaction.update(docRef, {'appointments': currentAppointments});
       });
@@ -85,12 +88,14 @@ class FirebaseService {
   }
 
   /// Delete appointment from user profile
-  Future<void> deleteAppointment(String uid, Map<String, dynamic> appointment) async {
+  Future<void> deleteAppointment(
+      String uid, Map<String, dynamic> appointment) async {
     final docRef = firestore.collection('users').doc(uid);
     try {
       await firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
-        final appointments = List<dynamic>.from(snapshot.get('appointments') ?? []);
+        final appointments =
+            List<dynamic>.from(snapshot.get('appointments') ?? []);
         appointments.removeWhere((a) =>
             Map<String, dynamic>.from(a).toString() == appointment.toString());
         transaction.update(docRef, {'appointments': appointments});
@@ -124,9 +129,6 @@ class FirebaseService {
     }
   }
 }
-
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class FirebaseService {
   // Singleton pattern
@@ -176,12 +178,14 @@ class FirebaseService {
   User? getCurrentUser() => auth.currentUser;
 
   /// Get Firestore user profile stream (real-time)
-  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserProfileStream(String uid) {
+  Stream<DocumentSnapshot<Map<String, dynamic>>> getUserProfileStream(
+      String uid) {
     return firestore.collection('users').doc(uid).snapshots();
   }
 
   /// Get user profile once (non-stream)
-  Future<DocumentSnapshot<Map<String, dynamic>>> getUserProfileOnce(String uid) async {
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserProfileOnce(
+      String uid) async {
     return await firestore.collection('users').doc(uid).get();
   }
 
@@ -195,12 +199,14 @@ class FirebaseService {
   }
 
   /// Add new appointment using a transaction
-  Future<void> addAppointment(String uid, Map<String, dynamic> appointment) async {
+  Future<void> addAppointment(
+      String uid, Map<String, dynamic> appointment) async {
     final docRef = firestore.collection('users').doc(uid);
     try {
       await firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
-        final currentAppointments = List<dynamic>.from(snapshot.get('appointments') ?? []);
+        final currentAppointments =
+            List<dynamic>.from(snapshot.get('appointments') ?? []);
         currentAppointments.add(appointment);
         transaction.update(docRef, {'appointments': currentAppointments});
       });
@@ -211,12 +217,14 @@ class FirebaseService {
   }
 
   /// Delete appointment from user profile
-  Future<void> deleteAppointment(String uid, Map<String, dynamic> appointment) async {
+  Future<void> deleteAppointment(
+      String uid, Map<String, dynamic> appointment) async {
     final docRef = firestore.collection('users').doc(uid);
     try {
       await firestore.runTransaction((transaction) async {
         final snapshot = await transaction.get(docRef);
-        final appointments = List<dynamic>.from(snapshot.get('appointments') ?? []);
+        final appointments =
+            List<dynamic>.from(snapshot.get('appointments') ?? []);
         appointments.removeWhere((a) =>
             Map<String, dynamic>.from(a).toString() == appointment.toString());
         transaction.update(docRef, {'appointments': appointments});
@@ -250,4 +258,3 @@ class FirebaseService {
     }
   }
 }
-

@@ -20,12 +20,12 @@ import 'package:timezone/data/latest.dart' as tz;
 import 'core/theme.dart';
 import 'core/themeNotifier.dart';
 
-// 🛠️ Initialize Notifications Plugin
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
@@ -37,14 +37,12 @@ Future<void> main() async {
     debugPrintStack(stackTrace: stack);
   }
 
-  // ⏰ Local Notifications Setup
+  // Local Notifications Setup
   tz.initializeTimeZones();
   const AndroidInitializationSettings initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
-
   const InitializationSettings initializationSettings =
       InitializationSettings(android: initializationSettingsAndroid);
-
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
   runApp(
@@ -68,15 +66,39 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: ThemeData.dark(),
           themeMode: themeNotifier.themeMode,
-          initialRoute:
-              FirebaseAuth.instance.currentUser == null ? '/login' : '/',
+          home: AuthWrapper(), // Changed to auth wrapper
           routes: {
-            '/': (context) => const MainNavigation(),
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),
-            '/profile': (context) => const ProfileScreen(),
           },
         );
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Show loading screen while checking auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        // User is logged in
+        if (snapshot.hasData) {
+          return const MainNavigation();
+        }
+
+        // User is not logged in
+        return const LoginScreen();
       },
     );
   }
@@ -92,30 +114,31 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
   String studentName = 'User';
-  String religion = 'Christianity'; // Combined the duplicate declarations
+  String religion = 'Christianity';
   bool _isLoading = true;
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
 
-    final args =
-        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
-
-    if (args != null) {
-      studentName = args['name'] ?? 'User';
-      setState(() {
-        religion = args['religion'] ?? 'Christianity';
-      });
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      // Fetch additional user data from Firestore if needed
+      // Example:
+      // final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      // setState(() {
+      //   studentName = doc['name'] ?? 'User';
+      //   religion = doc['religion'] ?? 'Christianity';
+      // });
     }
-
     setState(() => _isLoading = false);
   }
 
   void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+    setState(() => _selectedIndex = index);
   }
 
   @override
@@ -126,7 +149,6 @@ class _MainNavigationState extends State<MainNavigation> {
       );
     }
 
-    // Choose correct Home screen
     final Widget home = (religion == 'Islam')
         ? IslamHomeScreen(studentName: studentName)
         : HomeScreen(studentName: studentName);
@@ -136,7 +158,7 @@ class _MainNavigationState extends State<MainNavigation> {
       const MediaScreen(),
       const PrayerScreen(),
       const ChatScreen(),
-      const ProfileScreen(),
+      ProfileScreen(onLogout: _handleLogout), // Modified profile screen
     ];
 
     return Scaffold(
@@ -161,5 +183,20 @@ class _MainNavigationState extends State<MainNavigation> {
         ],
       ),
     );
+  }
+
+  Future<void> _handleLogout() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      debugPrint('Logout error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Logout failed. Please try again.')));
+    }
   }
 }
