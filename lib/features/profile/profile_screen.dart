@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,66 +14,69 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _ageController = TextEditingController();
   final _phoneController = TextEditingController();
-
   final User? _user = FirebaseAuth.instance.currentUser;
+
+  int totalRequests = 0;
+  int completedRequests = 0;
+  int pendingRequests = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPrayerStats();
+  }
+
+  Future<void> _fetchPrayerStats() async {
+    if (_user == null) return;
+    final snap = await FirebaseFirestore.instance
+        .collection('prayer_requests')
+        .where('userId', isEqualTo: _user!.uid)
+        .get();
+
+    final all = snap.docs;
+    final pending = all.where((d) => d['status'] == 'pending');
+    final done = all.where((d) => d['status'] == 'prayed');
+
+    setState(() {
+      totalRequests = all.length;
+      pendingRequests = pending.length;
+      completedRequests = done.length;
+    });
+  }
 
   Future<void> _signOut() async {
     await FirebaseAuth.instance.signOut();
-    if (context.mounted) {
-      Navigator.of(context).pushReplacementNamed('/login');
-    }
+    if (mounted) Navigator.of(context).pushReplacementNamed('/login');
   }
 
   Future<void> confirmLogout() async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
-        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
-        title: Row(
-          children: const [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28),
-            SizedBox(width: 10),
-            Text('Confirm Logout'),
-          ],
-        ),
-        content: const Text(
-          'Are you sure you want to log out of your account?',
-          style: TextStyle(fontSize: 16),
-        ),
+        title: const Text('Confirm Logout'),
+        content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text('Cancel'),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             child: const Text('Logout'),
           ),
         ],
       ),
     );
 
-    if (shouldLogout == true) {
-      _signOut();
-    }
+    if (shouldLogout == true) _signOut();
   }
 
-  Future<void> _showEditDialog(
-      Map<String, dynamic> currentData, String userId) async {
-    _ageController.text = currentData['age']?.toString() ?? '';
-    _phoneController.text = currentData['phone'] ?? '';
+  Future<void> _showEditDialog(Map<String, dynamic> data, String userId) async {
+    _ageController.text = data['age']?.toString() ?? '';
+    _phoneController.text = data['phone'] ?? '';
 
-    showDialog(
+    await showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Edit Profile'),
@@ -85,22 +89,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 controller: _ageController,
                 decoration: const InputDecoration(labelText: 'Age'),
                 keyboardType: TextInputType.number,
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter age' : null,
+                validator: (v) => v!.isEmpty ? 'Enter age' : null,
               ),
               TextFormField(
                 controller: _phoneController,
                 decoration: const InputDecoration(labelText: 'Phone'),
                 keyboardType: TextInputType.phone,
-                validator: (value) =>
-                    value!.isEmpty ? 'Please enter phone number' : null,
+                validator: (v) => v!.isEmpty ? 'Enter phone number' : null,
               ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -110,10 +112,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     .collection('users')
                     .doc(userId)
                     .update({
-                  'age': int.parse(_ageController.text.trim()),
-                  'phone': _phoneController.text.trim(),
+                  'age': int.parse(_ageController.text),
+                  'phone': _phoneController.text,
                 });
-                Navigator.of(context).pop();
+                Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Profile updated')),
                 );
@@ -135,12 +137,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String? userId = FirebaseAuth.instance.currentUser?.uid;
-
+    final String? userId = _user?.uid;
     if (userId == null) {
-      return const Scaffold(
-        body: Center(child: Text('User not logged in')),
-      );
+      return const Scaffold(body: Center(child: Text('User not logged in')));
     }
 
     return Scaffold(
@@ -148,11 +147,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: const Text('My Profile'),
         backgroundColor: Colors.deepPurple,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: confirmLogout,
-            tooltip: 'Logout',
-          ),
+          IconButton(icon: const Icon(Icons.logout), onPressed: confirmLogout),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
@@ -161,17 +156,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             .doc(userId)
             .snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting)
             return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('No user data found.'));
-          }
+          if (!snapshot.hasData || !snapshot.data!.exists)
+            return const Center(child: Text('No user data found'));
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
@@ -179,74 +167,120 @@ class _ProfileScreenState extends State<ProfileScreen> {
           final email = data['email'] ?? 'No Email';
           final age = data['age']?.toString() ?? 'Not set';
           final phone = data['phone'] ?? 'Not set';
-          final confirmationCode = data['confirmationCode'];
+          final religion = data['religion'] ?? 'Not specified';
+          final role = data['role'] ?? 'Student';
+          final photoUrl = data['photoUrl'];
+          final code = data['confirmationCode'];
           final appointment = data['appointment'];
 
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: ListView(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Profile Info',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Edit'),
-                      onPressed: () => _showEditDialog(data, userId),
-                    )
-                  ],
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Center(
+                child: CircleAvatar(
+                  radius: 48,
+                  backgroundImage:
+                      photoUrl != null ? NetworkImage(photoUrl) : null,
+                  child: photoUrl == null
+                      ? const Icon(Icons.person, size: 48)
+                      : null,
                 ),
-                const SizedBox(height: 12),
-                ListTile(
-                  leading: const Icon(Icons.person),
-                  title: const Text('Name'),
-                  subtitle: Text(name),
-                ),
-                ListTile(
+              ),
+              const SizedBox(height: 10),
+              Center(child: Text(name, style: const TextStyle(fontSize: 20))),
+              Center(child: Text(role)),
+              const SizedBox(height: 20),
+              Card(
+                child: ListTile(
                   leading: const Icon(Icons.email),
                   title: const Text('Email'),
                   subtitle: Text(email),
                 ),
-                ListTile(
+              ),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.phone),
+                  title: const Text('Phone'),
+                  subtitle: Text(phone),
+                ),
+              ),
+              Card(
+                child: ListTile(
                   leading: const Icon(Icons.cake),
                   title: const Text('Age'),
                   subtitle: Text(age),
                 ),
+              ),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.account_balance),
+                  title: const Text('Religion'),
+                  subtitle: Text(religion),
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.edit),
+                label: const Text('Edit Profile'),
+                onPressed: () => _showEditDialog(data, userId),
+              ),
+              const Divider(height: 32),
+              const Text('Prayer Info',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              if (code != null)
                 ListTile(
-                  leading: const Icon(Icons.phone),
-                  title: const Text('Phone Number'),
-                  subtitle: Text(phone),
+                  leading: const Icon(Icons.verified_user, color: Colors.green),
+                  title: const Text('Confirmation Code'),
+                  subtitle: Text(code),
                 ),
-                const SizedBox(height: 20),
-                const Divider(),
-                const Text(
-                  'Prayer Confirmation',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              if (appointment != null)
+                ListTile(
+                  leading: const Icon(Icons.calendar_today, color: Colors.blue),
+                  title: const Text('Appointment'),
+                  subtitle: Text(appointment),
                 ),
-                const SizedBox(height: 10),
-                if (confirmationCode != null)
-                  ListTile(
-                    leading:
-                        const Icon(Icons.verified_user, color: Colors.green),
-                    title: const Text('Confirmation Code'),
-                    subtitle: Text(confirmationCode),
-                  ),
-                if (appointment != null)
-                  ListTile(
-                    leading:
-                        const Icon(Icons.calendar_today, color: Colors.teal),
-                    title: const Text('Appointment Date'),
-                    subtitle: Text(appointment),
-                  ),
-                if (confirmationCode == null && appointment == null)
-                  const Text('No prayer request submitted yet.'),
-              ],
-            ),
+              if (code == null && appointment == null)
+                const Center(child: Text('No prayer request submitted.')),
+              const Divider(height: 32),
+              const Text(' Your Request Stands',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.list),
+                  title: const Text('Total Requests'),
+                  trailing: Text('$totalRequests'),
+                ),
+              ),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.check_circle, color: Colors.green),
+                  title: const Text('Completed'),
+                  trailing: Text('$completedRequests'),
+                ),
+              ),
+              Card(
+                child: ListTile(
+                  leading:
+                      const Icon(Icons.pending_actions, color: Colors.orange),
+                  title: const Text('Pending'),
+                  trailing: Text('$pendingRequests'),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Center(
+                child: TextButton.icon(
+                  icon: const Icon(Icons.qr_code),
+                  label: const Text('View QR Code '),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Feature coming soon!')),
+                    );
+                  },
+                ),
+              )
+            ],
           );
         },
       ),

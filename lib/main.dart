@@ -27,7 +27,7 @@ Future<void> main() async {
       );
     }
   } catch (e, stack) {
-    debugPrint("❌ Firebase init failed: $e");
+    debugPrint(" Firebase init failed: $e");
     debugPrintStack(stackTrace: stack);
   }
 
@@ -115,7 +115,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
     final List<Widget> screens = [
       home,
-      const MediaScreen(),
+      const PrayerRoomsScreen(),
       const PrayerScreen(),
       const ChatScreen(),
       const ProfileScreen(),

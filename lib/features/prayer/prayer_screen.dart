@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PrayerScreen extends StatefulWidget {
   const PrayerScreen({super.key});
@@ -8,6 +10,8 @@ class PrayerScreen extends StatefulWidget {
 }
 
 class _PrayerScreenState extends State<PrayerScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   final List<String> _prayerPoints = [
     'Healing',
     'Forgiveness',
@@ -17,41 +21,113 @@ class _PrayerScreenState extends State<PrayerScreen> {
     'Other',
   ];
 
-  final List<String> _leaders = [
-    'Fr. Andrew',
-    'Sr. Mary',
-    'Imam Yusuf',
-    'Sheikh Musa'
-  ];
-
   String? _selectedPrayerPoint;
-  String? _selectedLeader;
   String _customPrayer = '';
   String? _confirmationCode;
-
-  final _formKey = GlobalKey<FormState>();
+  String? _assignedLeader;
+  bool _isSubmitting = false;
 
   String _generateConfirmationCode() {
     final now = DateTime.now();
     return 'CONF-${now.millisecondsSinceEpoch}';
   }
 
-  void _submitRequest() {
-    if (_formKey.currentState!.validate()) {
-      final requestText = _selectedPrayerPoint == 'Other'
-          ? _customPrayer
-          : _selectedPrayerPoint;
+  Future<String?> _getStudentReligion() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    return userDoc['religion'];
+  }
 
-      setState(() {
-        _confirmationCode = _generateConfirmationCode();
+  Future<DocumentSnapshot?> _getBestMatchingLeader(
+      String prayerPoint, String religion) async {
+    final query = await FirebaseFirestore.instance
+        .collection('leaders')
+        .where('preferences', arrayContains: prayerPoint)
+        .where('religion', isEqualTo: religion)
+        .orderBy('lastAssigned', descending: false) // Least recently assigned
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty ? query.docs.first : null;
+  }
+
+  Future<void> _submitRequest() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (uid == null || email == null) return;
+
+    final prayerText =
+        _selectedPrayerPoint == 'Other' ? _customPrayer : _selectedPrayerPoint!;
+    final confirmationCode = _generateConfirmationCode();
+
+    try {
+      final religion = await _getStudentReligion();
+      if (religion == null)
+        throw Exception('Could not determine user religion.');
+
+      final leaderDoc =
+          await _getBestMatchingLeader(_selectedPrayerPoint!, religion);
+      if (leaderDoc == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('No available leader found for this request.')),
+        );
+        setState(() => _isSubmitting = false);
+        return;
+      }
+
+      final leaderName = leaderDoc['name'];
+      final leaderId = leaderDoc.id;
+
+      // Save the request
+      await FirebaseFirestore.instance.collection('prayer_requests').add({
+        'requestText': prayerText,
+        'customRequest': _customPrayer,
+        'leader': leaderName,
+        'leaderId': leaderId,
+        'confirmationCode': confirmationCode,
+        'userId': uid,
+        'studentEmail': email,
+        'status': 'pending',
+        'replyRead': false,
+        'timestamp': Timestamp.now(),
       });
 
-      // Simulate Firestore or backend submission here
+      // Update student record
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
+        'confirmationCode': confirmationCode,
+        'assignedLeader': leaderName,
+      });
+
+      // Update leader's last assigned timestamp
+      await FirebaseFirestore.instance
+          .collection('leaders')
+          .doc(leaderId)
+          .update({
+        'lastAssigned': Timestamp.now(),
+      });
+
+      setState(() {
+        _confirmationCode = confirmationCode;
+        _assignedLeader = leaderName;
+      });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Prayer request submitted to $_selectedLeader'),
-        ),
+        const SnackBar(content: Text('Prayer request submitted successfully')),
       );
+    } catch (e) {
+      debugPrint('Error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -76,12 +152,10 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
                 value: _selectedPrayerPoint,
                 onChanged: (value) {
-                  setState(() {
-                    _selectedPrayerPoint = value;
-                  });
+                  setState(() => _selectedPrayerPoint = value);
                 },
                 items: _prayerPoints
-                    .map((point) => DropdownMenuItem(
+                    .map((point) => DropdownMenuItem<String>(
                           value: point,
                           child: Text(point),
                         ))
@@ -102,48 +176,37 @@ class _PrayerScreenState extends State<PrayerScreen> {
                       ? 'Please enter your prayer request'
                       : null,
                 ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(
-                  labelText: 'Choose Religious Leader',
-                  border: OutlineInputBorder(),
-                ),
-                value: _selectedLeader,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedLeader = value;
-                  });
-                },
-                items: _leaders
-                    .map((leader) => DropdownMenuItem(
-                          value: leader,
-                          child: Text(leader),
-                        ))
-                    .toList(),
-                validator: (value) =>
-                    value == null ? 'Please choose a leader' : null,
-              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
-                onPressed: _submitRequest,
-                child: const Text('Submit Request'),
+                onPressed: _isSubmitting ? null : _submitRequest,
+                child: _isSubmitting
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Submit Request'),
               ),
-              if (_confirmationCode != null) ...[
+              if (_confirmationCode != null && _assignedLeader != null) ...[
                 const SizedBox(height: 24),
                 Card(
                   color: Colors.green.shade50,
                   child: ListTile(
                     leading:
                         const Icon(Icons.verified_user, color: Colors.green),
-                    title: Text('Confirmation Code'),
+                    title: const Text('Confirmation Code'),
                     subtitle: Text(_confirmationCode!),
                   ),
                 ),
-              ]
+                Card(
+                  color: Colors.blue.shade50,
+                  child: ListTile(
+                    leading: const Icon(Icons.person, color: Colors.blue),
+                    title: const Text('Assigned Leader'),
+                    subtitle: Text(_assignedLeader!),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
