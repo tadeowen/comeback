@@ -4,7 +4,7 @@ import '../media/quran.dart';
 
 import '../chat/islam_chat_screen.dart';
 import '../prayer/islam_prayer_request.dart';
-// import '../profile/islam_profile_screen.dart'; // Optional
+import '../profile/islam_profile_screen.dart'; // Optional
 
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
@@ -31,8 +31,8 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
       const Center(child: Text("💡 Hadith")),
       const IslamChatScreen(),
 
-      // MuslimSettingsScreen(studentName: widget.studentName), // Your real settings screen here
-      const Center(child: Text("Settings Placeholder")),
+      MuslimSettingsScreen(
+          studentName: widget.studentName), // Your real settings screen here
     ];
   }
 
