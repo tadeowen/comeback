@@ -6,6 +6,7 @@ import '../prayer/islam_prayer_request.dart';
 import '../profile/islam_profile_screen.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
+import '../media/user_stats.dart';
 
 class IslamHomeScreen extends StatefulWidget {
   final String? studentName;
@@ -27,7 +28,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
       FeaturedImamsHome(studentName: widget.studentName ?? 'Guest'),
       const QuranHomePage(),
       const IslamPrayerRequest(),
-      const Center(child: Text("💡 Hadith")),
+      const UserStatsPage(),
       const IslamChatScreen(),
       MuslimSettingsScreen(studentName: widget.studentName ?? 'Guest'),
     ];
@@ -51,7 +52,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Quran'),
           BottomNavigationBarItem(
               icon: Icon(Icons.favorite), label: 'Prayer Request'),
-          BottomNavigationBarItem(icon: Icon(Icons.lightbulb), label: 'Hadith'),
+          BottomNavigationBarItem(icon: Icon(Icons.analytics), label: 'Status'),
           BottomNavigationBarItem(icon: Icon(Icons.chat_bubble), label: 'Chat'),
           BottomNavigationBarItem(
               icon: Icon(Icons.settings), label: 'Settings'),
