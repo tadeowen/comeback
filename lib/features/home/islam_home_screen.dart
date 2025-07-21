@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../media/quran.dart';
-
 import '../chat/islam_chat_screen.dart';
 import '../prayer/islam_prayer_request.dart';
-import '../profile/islam_profile_screen.dart'; // Optional
-
+import '../profile/islam_profile_screen.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:intl/intl.dart';
 
 class IslamHomeScreen extends StatefulWidget {
-  final String studentName;
+  final String? studentName;
 
   const IslamHomeScreen({super.key, required this.studentName});
 
@@ -25,14 +24,12 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
   void initState() {
     super.initState();
     _pages = [
-      FeaturedImamsHome(studentName: widget.studentName),
+      FeaturedImamsHome(studentName: widget.studentName ?? 'Guest'),
       const QuranHomePage(),
       const IslamPrayerRequest(),
       const Center(child: Text("💡 Hadith")),
       const IslamChatScreen(),
-
-      MuslimSettingsScreen(
-          studentName: widget.studentName), // Your real settings screen here
+      MuslimSettingsScreen(studentName: widget.studentName ?? 'Guest'),
     ];
   }
 
@@ -40,7 +37,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Welcome, ${widget.studentName}!'),
+        title: Text('Welcome, ${widget.studentName ?? 'Guest'}!'),
         backgroundColor: Colors.green[700],
       ),
       body: _pages[_currentIndex],
@@ -76,6 +73,12 @@ class FeaturedImamsHome extends StatefulWidget {
 class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
   final TextEditingController _searchController = TextEditingController();
   String _searchTerm = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,8 +140,9 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               }
 
               final imams = snapshot.data!.docs.where((doc) {
-                final data = doc.data()! as Map<String, dynamic>;
-                final name = (data['name'] ?? '').toString().toLowerCase();
+                final data = doc.data() as Map<String, dynamic>? ?? {};
+                final name =
+                    (data['name'] as String? ?? 'Unnamed Imam').toLowerCase();
                 return name.contains(_searchTerm);
               }).toList();
 
@@ -153,8 +157,8 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
                   itemCount: imams.length,
                   itemBuilder: (context, index) {
                     final imamDoc = imams[index];
-                    final imam = imamDoc.data()! as Map<String, dynamic>;
-                    final name = imam['name'] ?? 'Unnamed Imam';
+                    final imam = imamDoc.data() as Map<String, dynamic>? ?? {};
+                    final name = imam['name'] as String? ?? 'Unnamed Imam';
                     final picUrl = imam['profilePicUrl'] as String?;
 
                     return InkWell(
@@ -191,8 +195,9 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
 
                           if (totalRatings > 0) {
                             final totalStars = ratings.fold(0, (sum, doc) {
-                              final rating = doc['rating'] as num;
-                              return sum + rating.toInt();
+                              final rating =
+                                  (doc['rating'] as num?)?.toInt() ?? 0;
+                              return sum + rating;
                             });
                             avgRating = totalStars / totalRatings;
                           }
@@ -281,8 +286,27 @@ class ImamDetailScreen extends StatelessWidget {
             .where('imamId', isEqualTo: imamId)
             .snapshots(),
         builder: (context, ratingSnapshot) {
-          if (!ratingSnapshot.hasData) {
+          if (ratingSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
+          }
+
+          if (ratingSnapshot.hasError) {
+            return Center(
+              child: Text('Error loading reviews: ${ratingSnapshot.error}'),
+            );
+          }
+
+          if (!ratingSnapshot.hasData || ratingSnapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.reviews, size: 64, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text('No reviews yet for $imamName'),
+                ],
+              ),
+            );
           }
 
           final ratings = ratingSnapshot.data!.docs;
@@ -291,8 +315,9 @@ class ImamDetailScreen extends StatelessWidget {
 
           if (totalReviews > 0) {
             final totalStars = ratings.fold(0, (sum, doc) {
-              final rating = doc['rating'] as num;
-              return sum + rating.toInt();
+              final data = doc.data() as Map<String, dynamic>? ?? {};
+              final rating = (data['rating'] as num?)?.toInt() ?? 0;
+              return sum + rating;
             });
             averageRating = totalStars / totalReviews;
           }
@@ -301,7 +326,6 @@ class ImamDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Imam Profile Section
                 Center(
                   child: Column(
                     children: [
@@ -324,8 +348,6 @@ class ImamDetailScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-
-                // Ratings Summary Section
                 Column(
                   children: [
                     Text(
@@ -351,8 +373,6 @@ class ImamDetailScreen extends StatelessWidget {
                     const Divider(),
                   ],
                 ),
-
-                // Individual Reviews Section
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Text(
@@ -360,91 +380,108 @@ class ImamDetailScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
-                if (totalReviews == 0)
-                  const Center(child: Text('No reviews yet'))
-                else
-                  ...ratings.map((ratingDoc) {
-                    final rating = ratingDoc.data() as Map<String, dynamic>;
-                    final stars = (rating['rating'] as num).toInt();
-                    final timestamp =
-                        (rating['timestamp'] as Timestamp).toDate();
-                    final reviewerId = rating['studentId'] as String;
+                ...ratings.map((ratingDoc) {
+                  final rating =
+                      ratingDoc.data() as Map<String, dynamic>? ?? {};
+                  final stars = (rating['rating'] as num?)?.toInt() ?? 0;
+                  final timestamp =
+                      (rating['timestamp'] as Timestamp?)?.toDate() ??
+                          DateTime.now();
+                  final reviewerId = rating['studentId'] as String? ?? '';
 
-                    return FutureBuilder<DocumentSnapshot>(
-                      future: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(reviewerId)
-                          .get(),
-                      builder: (context, userSnapshot) {
-                        String reviewerName = 'Anonymous';
-                        if (userSnapshot.hasData && userSnapshot.data!.exists) {
-                          final userData = userSnapshot.data!.data()
-                              as Map<String, dynamic>?;
-                          if (userData != null && userData['name'] != null) {
-                            reviewerName = userData['name'] as String;
-                          }
-                        }
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 20,
-                                      backgroundColor: Colors.grey[300],
-                                      child: Text(
-                                        reviewerName
-                                            .substring(0, 1)
-                                            .toUpperCase(),
-                                        style: const TextStyle(
-                                            color: Colors.black),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      reviewerName,
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  children: List.generate(
-                                    5,
-                                    (i) => Icon(
-                                      Icons.star,
-                                      color: i < stars
-                                          ? Colors.amber
-                                          : Colors.grey,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Reviewed on ${timestamp.toLocal().toString().split(' ')[0]}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                  if (reviewerId.isEmpty) {
+                    return _buildReviewCard(
+                      reviewerName: 'Anonymous',
+                      stars: stars,
+                      timestamp: timestamp,
                     );
-                  }).toList(),
+                  }
+
+                  return FutureBuilder<DocumentSnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(reviewerId)
+                        .get(),
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      String reviewerName = 'Anonymous';
+                      if (userSnapshot.hasData && userSnapshot.data != null) {
+                        final userData =
+                            userSnapshot.data!.data() as Map<String, dynamic>?;
+                        reviewerName =
+                            userData?['name'] as String? ?? 'Anonymous';
+                      }
+
+                      return _buildReviewCard(
+                        reviewerName: reviewerName,
+                        stars: stars,
+                        timestamp: timestamp,
+                      );
+                    },
+                  );
+                }).toList(),
               ],
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildReviewCard({
+    required String reviewerName,
+    required int stars,
+    required DateTime timestamp,
+  }) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.grey[300],
+                  child: Text(
+                    reviewerName.substring(0, 1).toUpperCase(),
+                    style: const TextStyle(color: Colors.black),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  reviewerName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: List.generate(
+                5,
+                (i) => Icon(
+                  Icons.star,
+                  color: i < stars ? Colors.amber : Colors.grey,
+                  size: 20,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Reviewed on ${DateFormat('yyyy-MM-dd').format(timestamp)}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

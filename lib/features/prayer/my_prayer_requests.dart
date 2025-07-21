@@ -307,12 +307,12 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
                     setState(() => isSubmitting = true);
                     try {
                       // Save rating
-                      await _firestore.collection('ImamRatings').add({
+                      await _firestore.collection('imamRatings').add({
                         'imamId': imamId,
                         'userId': currentUserId,
                         'requestId': requestRef.id,
                         'rating': ratingValue,
-                        'createdAt': FieldValue.serverTimestamp(),
+                        'timestamp': FieldValue.serverTimestamp(),
                       });
 
                       // Mark request as rated
