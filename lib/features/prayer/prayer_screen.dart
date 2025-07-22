@@ -32,72 +32,102 @@ class _PrayerScreenState extends State<PrayerScreen> {
     return 'CONF-${now.millisecondsSinceEpoch}';
   }
 
+  Future<String?> _getStudentReligion() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+    final userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    return userDoc['religion'];
+  }
+
+  Future<DocumentSnapshot?> _getBestMatchingLeader(
+      String prayerPoint, String religion) async {
+    final query = await FirebaseFirestore.instance
+        .collection('leaders')
+        .where('preferences', arrayContains: prayerPoint)
+        .where('religion', isEqualTo: religion)
+        .orderBy('lastAssigned', descending: false) // Least recently assigned
+        .limit(1)
+        .get();
+
+    return query.docs.isNotEmpty ? query.docs.first : null;
+  }
+
   Future<void> _submitRequest() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
-    final userId = FirebaseAuth.instance.currentUser?.uid;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final email = FirebaseAuth.instance.currentUser?.email;
+    if (uid == null || email == null) return;
+
     final prayerText =
-        _selectedPrayerPoint == 'Other' ? _customPrayer : _selectedPrayerPoint;
+        _selectedPrayerPoint == 'Other' ? _customPrayer : _selectedPrayerPoint!;
+    final confirmationCode = _generateConfirmationCode();
 
     try {
-      // Fetch matching leaders
-      final leaderQuery = await FirebaseFirestore.instance
-          .collection('leaders')
-          .where('preferences', arrayContains: _selectedPrayerPoint)
-          .limit(1)
-          .get();
+      final religion = await _getStudentReligion();
+      if (religion == null)
+        throw Exception('Could not determine user religion.');
 
-      if (leaderQuery.docs.isEmpty) {
+      final leaderDoc =
+          await _getBestMatchingLeader(_selectedPrayerPoint!, religion);
+      if (leaderDoc == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('No available leader found for this prayer point.'),
-          ),
+              content: Text('No available leader found for this request.')),
         );
         setState(() => _isSubmitting = false);
         return;
       }
 
-      final leader = leaderQuery.docs.first;
-      final leaderName = leader['name'];
-      final confirmationCode = _generateConfirmationCode();
+      final leaderName = leaderDoc['name'];
+      final leaderId = leaderDoc.id;
 
-      // Save prayer request
+      // Save the request
       await FirebaseFirestore.instance.collection('prayer_requests').add({
         'requestText': prayerText,
         'customRequest': _customPrayer,
         'leader': leaderName,
+        'leaderId': leaderId,
         'confirmationCode': confirmationCode,
-        'userId': userId,
+        'userId': uid,
+        'studentEmail': email,
+        'status': 'pending',
+        'replyRead': false,
         'timestamp': Timestamp.now(),
       });
 
-      // Update user document
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+      // Update student record
+      await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'confirmationCode': confirmationCode,
         'assignedLeader': leaderName,
       });
 
+      // Update leader's last assigned timestamp
+      await FirebaseFirestore.instance
+          .collection('leaders')
+          .doc(leaderId)
+          .update({
+        'lastAssigned': Timestamp.now(),
+      });
+
       setState(() {
-        _assignedLeader = leaderName;
         _confirmationCode = confirmationCode;
+        _assignedLeader = leaderName;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Prayer request submitted successfully')),
       );
     } catch (e) {
-      debugPrint('Submission error: $e');
+      debugPrint('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: $e')),
       );
     } finally {
-      setState(() {
-        _isSubmitting = false;
-      });
+      setState(() => _isSubmitting = false);
     }
   }
 
@@ -122,9 +152,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
                 value: _selectedPrayerPoint,
                 onChanged: (value) {
-                  setState(() {
-                    _selectedPrayerPoint = value;
-                  });
+                  setState(() => _selectedPrayerPoint = value);
                 },
                 items: _prayerPoints
                     .map((point) => DropdownMenuItem<String>(
@@ -156,9 +184,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
                 onPressed: _isSubmitting ? null : _submitRequest,
                 child: _isSubmitting
-                    ? const CircularProgressIndicator(
-                        color: Colors.white,
-                      )
+                    ? const CircularProgressIndicator(color: Colors.white)
                     : const Text('Submit Request'),
               ),
               if (_confirmationCode != null && _assignedLeader != null) ...[
@@ -188,4 +214,3 @@ class _PrayerScreenState extends State<PrayerScreen> {
     );
   }
 }
-
