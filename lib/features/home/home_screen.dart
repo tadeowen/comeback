@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class HomeScreen extends StatefulWidget {
   final String studentName;
@@ -9,6 +11,18 @@ class HomeScreen extends StatefulWidget {
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
+}
+
+Future<String> fetchBibleVerse(String reference) async {
+  final url = Uri.parse('https://bible-api.com/$reference');
+  final response = await http.get(url);
+
+  if (response.statusCode == 200) {
+    final data = json.decode(response.body);
+    return "${data['text'].trim()} – ${data['reference']}";
+  } else {
+    return "Verse not found.";
+  }
 }
 
 class _HomeScreenState extends State<HomeScreen>
@@ -201,15 +215,18 @@ class _HomeScreenState extends State<HomeScreen>
                     return const Center(child: CircularProgressIndicator());
 
                   final docs = snapshot.data!.docs.where((d) {
-                    final name = (d['name'] as String).toLowerCase();
-                    final church = (d['church'] as String).toLowerCase();
+                    final name = (d['name'] ?? '').toString().toLowerCase();
+                    final church =
+                        (d['church'] ?? 'Other').toString().toLowerCase();
+
                     return name.contains(searchQuery) ||
                         church.contains(searchQuery);
                   }).toList();
 
                   final grouped = <String, List<QueryDocumentSnapshot>>{};
                   for (var d in docs) {
-                    final church = d['church'] ?? 'Other';
+                    final church = (d['church'] ?? 'Other').toString();
+
                     grouped.putIfAbsent(church, () => []).add(d);
                   }
 

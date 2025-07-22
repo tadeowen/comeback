@@ -155,7 +155,8 @@ class _MainNavigationState extends State<MainNavigation> {
 
     final List<Widget> screens = [
       home,
-      const PrayerRoomsScreen(),
+      //const PrayerRoomsScreen(),
+      const BibleHomePage(),
       const PrayerScreen(),
       const ChatScreen(),
       ProfileScreen(onLogout: _handleLogout), // Modified profile screen

@@ -8,8 +8,10 @@ environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
+  http: 1.4.0 
   flutter:
     sdk: flutter
+   
   image_picker: ^1.1.2
   firebase_auth: ^5.6.2
   firebase_analytics: ^11.0.1
@@ -27,7 +29,7 @@ dependencies:
   google_fonts: ^6.2.0
   flutter_local_notifications: ^19.3.0
   syncfusion_flutter_charts: ^30.1.40
-  http: ^1.0.0
+  
   shared_preferences: ^2.0.15
   connectivity_plus: ^4.0.0  
   hive: ^2.2.3
@@ -42,6 +44,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
+ 
+  # or latest
+
 
 flutter:
   uses-material-design: true
