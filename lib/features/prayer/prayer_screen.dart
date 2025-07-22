@@ -1,3 +1,4 @@
+import 'dart:collection'; // ✅ Required for SplayTreeMap
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -42,15 +43,39 @@ class _PrayerScreenState extends State<PrayerScreen> {
 
   Future<DocumentSnapshot?> _getBestMatchingLeader(
       String prayerPoint, String religion) async {
-    final query = await FirebaseFirestore.instance
+    final leaderQuery = await FirebaseFirestore.instance
         .collection('leaders')
-        .where('preferences', arrayContains: prayerPoint)
         .where('religion', isEqualTo: religion)
-        .orderBy('lastAssigned', descending: false) // Least recently assigned
-        .limit(1)
         .get();
 
-    return query.docs.isNotEmpty ? query.docs.first : null;
+    if (leaderQuery.docs.isEmpty) return null;
+
+    final SplayTreeMap<double, DocumentSnapshot> scoredLeaders =
+        SplayTreeMap<double, DocumentSnapshot>();
+
+    for (final doc in leaderQuery.docs) {
+      final preferences = List<String>.from(doc['preferences'] ?? []);
+      final lastAssigned = doc['lastAssigned'] ?? Timestamp(0, 0);
+      final assignedCount =
+          doc.data().containsKey('assignedCount') ? doc['assignedCount'] : 0;
+
+      double score = 0;
+
+      if (preferences.contains(prayerPoint)) score += 10;
+
+      final timeSinceAssigned = DateTime.now()
+          .difference((lastAssigned as Timestamp).toDate())
+          .inMinutes;
+      score += timeSinceAssigned / 10;
+
+      if (assignedCount is int) {
+        score += (1 / (assignedCount + 1)) * 5;
+      }
+
+      scoredLeaders[score] = doc;
+    }
+
+    return scoredLeaders.isNotEmpty ? scoredLeaders.values.last : null;
   }
 
   Future<void> _submitRequest() async {
@@ -75,17 +100,15 @@ class _PrayerScreenState extends State<PrayerScreen> {
           await _getBestMatchingLeader(_selectedPrayerPoint!, religion);
       if (leaderDoc == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('No available leader found for this request.')),
+          const SnackBar(content: Text('No available leader found.')),
         );
         setState(() => _isSubmitting = false);
         return;
       }
 
-      final leaderName = leaderDoc['name'];
+      final leaderName = leaderDoc['name'] ?? 'Unknown';
       final leaderId = leaderDoc.id;
 
-      // Save the request
       await FirebaseFirestore.instance.collection('prayer_requests').add({
         'requestText': prayerText,
         'customRequest': _customPrayer,
@@ -99,18 +122,17 @@ class _PrayerScreenState extends State<PrayerScreen> {
         'timestamp': Timestamp.now(),
       });
 
-      // Update student record
       await FirebaseFirestore.instance.collection('users').doc(uid).update({
         'confirmationCode': confirmationCode,
         'assignedLeader': leaderName,
       });
 
-      // Update leader's last assigned timestamp
       await FirebaseFirestore.instance
           .collection('leaders')
           .doc(leaderId)
           .update({
         'lastAssigned': Timestamp.now(),
+        'assignedCount': FieldValue.increment(1),
       });
 
       setState(() {
@@ -119,7 +141,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prayer request submitted successfully')),
+        const SnackBar(content: Text('Prayer request submitted successfully.')),
       );
     } catch (e) {
       debugPrint('Error: $e');
@@ -170,6 +192,7 @@ class _PrayerScreenState extends State<PrayerScreen> {
                     labelText: 'Custom Prayer Request',
                     border: OutlineInputBorder(),
                   ),
+                  textCapitalization: TextCapitalization.sentences,
                   maxLines: 3,
                   onChanged: (val) => _customPrayer = val,
                   validator: (val) => val == null || val.isEmpty
@@ -184,7 +207,12 @@ class _PrayerScreenState extends State<PrayerScreen> {
                 ),
                 onPressed: _isSubmitting ? null : _submitRequest,
                 child: _isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
                     : const Text('Submit Request'),
               ),
               if (_confirmationCode != null && _assignedLeader != null) ...[
