@@ -6,11 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../home/home_screen.dart';
-import '../home/islam_home_screen.dart';
-import '../home/priest_home_screen.dart';
-import '../home/imam_home_screen.dart';
-
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -142,22 +137,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         });
       }
 
-      // Navigate to home screen
-      Widget next = const Scaffold();
-      if (_selectedReligion == 'Christianity') {
-        next = _selectedRole == 'Priest'
-            ? PriestHomeScreen(priestName: name)
-            : HomeScreen(studentName: name);
-      } else {
-        next = _selectedRole == 'Imam'
-            ? ImamHomeScreen(imamName: name)
-            : IslamHomeScreen(studentName: name);
-      }
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => next),
-      );
+      // Navigate to login screen after successful registration
+      Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
