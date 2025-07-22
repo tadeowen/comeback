@@ -7,6 +7,7 @@ import '../profile/islam_profile_screen.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import '../media/user_stats.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class IslamHomeScreen extends StatefulWidget {
   final String? studentName;
@@ -20,12 +21,16 @@ class IslamHomeScreen extends StatefulWidget {
 class _IslamHomeScreenState extends State<IslamHomeScreen> {
   int _currentIndex = 0;
   late final List<Widget> _pages;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   void initState() {
     super.initState();
     _pages = [
-      FeaturedImamsHome(studentName: widget.studentName ?? 'Guest'),
+      FeaturedImamsHome(
+        studentName: widget.studentName ?? 'Guest',
+        userId: _auth.currentUser?.uid,
+      ),
       const QuranHomePage(),
       const IslamPrayerRequest(),
       const UserStatsPage(),
@@ -64,8 +69,13 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
 
 class FeaturedImamsHome extends StatefulWidget {
   final String studentName;
+  final String? userId;
 
-  const FeaturedImamsHome({super.key, required this.studentName});
+  const FeaturedImamsHome({
+    super.key,
+    required this.studentName,
+    required this.userId,
+  });
 
   @override
   State<FeaturedImamsHome> createState() => _FeaturedImamsHomeState();
@@ -90,6 +100,18 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Prayer Request Statistics Section
+          const Text(
+            '📊 Your Prayer Request Stats',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          PrayerRequestStats(userId: widget.userId),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 16),
+
+          // Prayer Times Section
           Text('🕌 Prayer Times (Today)', style: theme.titleMedium),
           const SizedBox(height: 8),
           Card(
@@ -109,6 +131,8 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
             ),
           ),
           const SizedBox(height: 24),
+
+          // Featured Imams Section
           Text('🌟 Featured Imams', style: theme.titleMedium),
           const SizedBox(height: 8),
           TextField(
@@ -257,6 +281,77 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+class PrayerRequestStats extends StatelessWidget {
+  final String? userId;
+
+  const PrayerRequestStats({super.key, required this.userId});
+
+  @override
+  Widget build(BuildContext context) {
+    Query query = FirebaseFirestore.instance.collection('dua_request');
+
+    // If user ID is provided, filter by user
+    if (userId != null) {
+      query = query.where('studentId', isEqualTo: userId);
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: query.snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final requests = snapshot.data!.docs;
+        final total = requests.length;
+        final resolved = requests.where((doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return data['status'] == 'resolved';
+        }).length;
+        final pending = total - resolved;
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildStatCard('Total', total, Colors.blue),
+            _buildStatCard('Pending', pending, Colors.orange),
+            _buildStatCard('Resolved', resolved, Colors.green),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildStatCard(String title, int count, Color color) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              count.toString(),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
