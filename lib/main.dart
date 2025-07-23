@@ -66,7 +66,7 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: ThemeData.dark(),
           themeMode: themeNotifier.themeMode,
-          home: AuthWrapper(), // Changed to auth wrapper
+          home: const AuthWrapper(),
           routes: {
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),
@@ -97,7 +97,7 @@ class AuthWrapper extends StatelessWidget {
           return const MainNavigation();
         }
 
-        // User is not logged in
+        // User is not logged in - show login screen directly
         return const LoginScreen();
       },
     );
@@ -155,11 +155,10 @@ class _MainNavigationState extends State<MainNavigation> {
 
     final List<Widget> screens = [
       home,
-      //const PrayerRoomsScreen(),
       const BibleApp(),
       const PrayerScreen(),
       const ChatScreen(),
-      ProfileScreen(onLogout: _handleLogout), // Modified profile screen
+      ProfileScreen(onLogout: _handleLogout),
     ];
 
     return Scaffold(
