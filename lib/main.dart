@@ -156,7 +156,7 @@ class _MainNavigationState extends State<MainNavigation> {
     final List<Widget> screens = [
       home,
       //const PrayerRoomsScreen(),
-      const BibleHomePage(),
+      const BibleApp(),
       const PrayerScreen(),
       const ChatScreen(),
       ProfileScreen(onLogout: _handleLogout), // Modified profile screen
@@ -175,8 +175,7 @@ class _MainNavigationState extends State<MainNavigation> {
         unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.video_library), label: 'Media'),
+          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'Bible'),
           BottomNavigationBarItem(
               icon: Icon(Icons.accessibility_new), label: 'Prayer'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
