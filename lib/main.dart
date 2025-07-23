@@ -1,8 +1,11 @@
-import 'firebase_options.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'firebase_options.dart';
 
 // Screens
 import 'features/login/login_screen.dart';
@@ -13,8 +16,6 @@ import 'features/home/islam_home_screen.dart';
 import 'features/media/media_screen.dart';
 import 'features/prayer/prayer_screen.dart';
 import 'features/chat/chat_screen.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tz;
 
 // Theme
 import 'core/theme.dart';
@@ -26,21 +27,24 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Set immersive mode for splash screen
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+
   try {
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
     }
-  } catch (e, stack) {
-    debugPrint("❌ Firebase init failed: $e");
-    debugPrintStack(stackTrace: stack);
+  } catch (e) {
+    debugPrint("Firebase initialization error: $e");
   }
 
-  // Local Notifications Setup
+  // Initialize timezones for notifications
   tz.initializeTimeZones();
+
   const AndroidInitializationSettings initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
+      AndroidInitializationSettings('@mipmap/launch_image');
   const InitializationSettings initializationSettings =
       InitializationSettings(android: initializationSettingsAndroid);
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
@@ -66,13 +70,66 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: ThemeData.dark(),
           themeMode: themeNotifier.themeMode,
-          home: const AuthWrapper(),
+          home: const SplashScreen(),
           routes: {
             '/login': (context) => const LoginScreen(),
             '/register': (context) => const RegisterScreen(),
+            '/main': (context) => const MainNavigation(),
           },
         );
       },
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Minimum splash duration
+    await Future.delayed(const Duration(seconds: 2));
+
+    if (!mounted) return;
+
+    // Check auth state after initialization
+    final auth = FirebaseAuth.instance;
+    User? user = auth.currentUser;
+
+    if (user == null) {
+      Navigator.pushReplacementNamed(context, '/login');
+    } else {
+      Navigator.pushReplacementNamed(context, '/main');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/images/comeback.png',
+              width: 150,
+              height: 150,
+            ),
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -85,19 +142,18 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Show loading screen while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const SplashScreen();
         }
 
-        // User is logged in
+        if (snapshot.hasError) {
+          return const Center(child: Text('Authentication error'));
+        }
+
         if (snapshot.hasData) {
           return const MainNavigation();
         }
 
-        // User is not logged in - show login screen directly
         return const LoginScreen();
       },
     );
@@ -124,17 +180,26 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   Future<void> _loadUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      // Fetch additional user data from Firestore if needed
-      // Example:
-      // final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      // setState(() {
-      //   studentName = doc['name'] ?? 'User';
-      //   religion = doc['religion'] ?? 'Christianity';
-      // });
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      // Simulate data loading
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading user data: $e');
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/login');
     }
-    setState(() => _isLoading = false);
   }
 
   void _onItemTapped(int index) {
@@ -187,13 +252,15 @@ class _MainNavigationState extends State<MainNavigation> {
   Future<void> _handleLogout() async {
     try {
       await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        MaterialPageRoute(builder: (_) => const SplashScreen()),
         (route) => false,
       );
     } catch (e) {
       debugPrint('Logout error: $e');
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Logout failed. Please try again.')));
     }
