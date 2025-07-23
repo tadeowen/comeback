@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'bible_book.dart';
 import 'book_selection.dart';
 
 class TestamentSelectionScreen extends StatelessWidget {

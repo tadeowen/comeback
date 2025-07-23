@@ -3,6 +3,7 @@ import '../chat/imam_chat_screen.dart';
 import '../media/appoint.dart';
 import '../media/imam_bar_graph.dart';
 import '../media/quran.dart';
+import '../profile/imam_profile.dart';
 
 class ImamHomeScreen extends StatefulWidget {
   final String imamName;
@@ -87,7 +88,7 @@ class _ImamHomeScreenState extends State<ImamHomeScreen> {
       const ImamChatScreen(),
       const ImamHadithSetupScreen(),
       const ImamRatingAnalyticsScreen(),
-      const Center(child: Text("👤 Profile Screen")),
+      const MuslimSettingsScreen(imamName: 'Imam'), // Pass the imam's name
     ];
   }
 
