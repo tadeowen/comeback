@@ -7,24 +7,54 @@ import 'package:shimmer/shimmer.dart';
 class ImamRatingAnalyticsScreen extends StatelessWidget {
   const ImamRatingAnalyticsScreen({super.key});
 
-  Future<Map<int, int>> _fetchRatingDistribution(String imamId) async {
+  Future<Map<String, dynamic>> _fetchData(String imamId) async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('imamRatings')
+      // Fetch rating distribution
+      final ratingsSnapshot = await FirebaseFirestore.instance
+          .collection(
+              'imamRatings') // Fixed typo from 'imamRatings' to 'imamRatings' if needed
           .where('imamId', isEqualTo: imamId)
           .get();
 
       final ratingCounts = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
-      for (var doc in snapshot.docs) {
-        final rating = (doc['rating'] as num).toInt();
+      for (var doc in ratingsSnapshot.docs) {
+        final rating = (doc['rating'] as num?)?.toInt() ?? 0;
         if (rating >= 1 && rating <= 5) {
           ratingCounts[rating] = (ratingCounts[rating] ?? 0) + 1;
         }
       }
-      return ratingCounts;
+
+      // Fetch request status counts from dua_request
+      final requestsSnapshot = await FirebaseFirestore.instance
+          .collection('dua_request')
+          .where('imamId', isEqualTo: imamId)
+          .get();
+
+      int pendingCount = 0;
+      int resolvedCount = 0;
+
+      for (var doc in requestsSnapshot.docs) {
+        final status = doc.data()['status'] as String? ??
+            'pending'; // Safely access status field
+        if (status == 'pending') {
+          pendingCount++;
+        } else if (status == 'resolved') {
+          resolvedCount++;
+        }
+      }
+
+      return {
+        'ratingCounts': ratingCounts,
+        'pendingCount': pendingCount,
+        'resolvedCount': resolvedCount,
+      };
     } catch (e) {
-      debugPrint('Error fetching ratings: $e');
-      return {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+      debugPrint('Error fetching data: $e');
+      return {
+        'ratingCounts': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+        'pendingCount': 0,
+        'resolvedCount': 0,
+      };
     }
   }
 
@@ -52,6 +82,22 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(child: _buildShimmerCard()),
               ],
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: Card(
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Container(
+                  height: 300,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 20),
             Expanded(
@@ -98,11 +144,11 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Ratings Analytics'),
+        title: const Text('My Analytics Dashboard'),
         backgroundColor: Colors.green[700],
       ),
-      body: FutureBuilder<Map<int, int>>(
-        future: _fetchRatingDistribution(imamId),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: _fetchData(imamId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return _buildShimmerLoading();
@@ -111,15 +157,36 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
             return Center(child: Text('Error: ${snapshot.error}'));
           }
 
-          final ratingCounts = snapshot.data ?? {1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
+          final data = snapshot.data ??
+              {
+                'ratingCounts': {1: 0, 2: 0, 3: 0, 4: 0, 5: 0},
+                'pendingCount': 0,
+                'resolvedCount': 0,
+              };
+
+          final ratingCounts = data['ratingCounts'] as Map<int, int>;
+          final pendingCount = data['pendingCount'] as int;
+          final resolvedCount = data['resolvedCount'] as int;
+
           final averageRating = _calculateAverageRating(ratingCounts);
-          final totalRatings = ratingCounts.values.reduce((a, b) => a + b);
+          final totalRatings = ratingCounts.values.fold(0, (a, b) => a + b);
 
           // Calculate maximum value for dynamic Y-axis scaling
           final maxRatingCount =
-              ratingCounts.values.reduce((a, b) => a > b ? a : b);
+              ratingCounts.values.fold(0, (a, b) => a > b ? a : b);
           final yAxisInterval = (maxRatingCount / 5).ceil().toDouble();
           final yAxisMax = (maxRatingCount + yAxisInterval).toDouble();
+
+          // Ensure we have at least some data for the pie chart
+          final hasRequestData = (pendingCount + resolvedCount) > 0;
+          final pieChartData = hasRequestData
+              ? [
+                  StatusData('Pending', pendingCount, Colors.orange),
+                  StatusData('Resolved', resolvedCount, Colors.green),
+                ]
+              : [
+                  StatusData('No Data', 1, Colors.grey),
+                ];
 
           return Container(
             decoration: const BoxDecoration(
@@ -129,7 +196,7 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
                 colors: [Color(0xFFF5F7FA), Color(0xFFE4E7EB)],
               ),
             ),
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
@@ -155,14 +222,15 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  Expanded(
-                    child: Card(
-                      elevation: 8,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
+                  Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        height: 300,
                         child: SfCartesianChart(
                           plotAreaBackgroundColor: Colors.white,
                           title: ChartTitle(
@@ -180,8 +248,7 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
                             majorTickLines: const MajorTickLines(size: 4),
                             labelStyle: TextStyle(
                               fontWeight: FontWeight.w500,
-                              color:
-                                  Colors.amber[800], // Yellow color for stars
+                              color: Colors.amber[800],
                             ),
                           ),
                           primaryYAxis: NumericAxis(
@@ -242,6 +309,59 @@ class ImamRatingAnalyticsScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
+                  Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: SizedBox(
+                        height: 300,
+                        child: SfCircularChart(
+                          title: ChartTitle(
+                            text: 'Prayer Request Status',
+                            textStyle: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          legend: Legend(
+                            isVisible: true,
+                            position: LegendPosition.bottom,
+                            overflowMode: LegendItemOverflowMode.wrap,
+                          ),
+                          series: <CircularSeries>[
+                            PieSeries<StatusData, String>(
+                              dataSource: pieChartData,
+                              xValueMapper: (StatusData data, _) => data.status,
+                              yValueMapper: (StatusData data, _) => data.count,
+                              dataLabelSettings: const DataLabelSettings(
+                                isVisible: true,
+                                labelPosition: ChartDataLabelPosition.outside,
+                                textStyle: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              pointColorMapper: (StatusData data, _) =>
+                                  data.color,
+                              explode: true,
+                              explodeIndex: 0,
+                              explodeOffset: '10%',
+                              animationDuration: 1000,
+                            ),
+                          ],
+                          tooltipBehavior: TooltipBehavior(
+                            enable: true,
+                            format: 'point.x : point.y',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -281,4 +401,12 @@ class RatingData {
   final Color color;
 
   RatingData(this.rating, this.count, this.color);
+}
+
+class StatusData {
+  final String status;
+  final int count;
+  final Color color;
+
+  StatusData(this.status, this.count, this.color);
 }
