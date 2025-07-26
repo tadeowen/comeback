@@ -4,6 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:comeback/api/mtn_momo_service.dart'; // ✅ FIXED CASE
+import 'donation_page.dart';
+
+
 
 class HomeScreen extends StatefulWidget {
   final String studentName;
@@ -145,8 +149,7 @@ class _HomeScreenState extends State<HomeScreen>
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // comeback Verse Carousel
+            children: [ // ✅ FIXED square bracket
               AnimatedOpacity(
                 opacity: opacity,
                 duration: const Duration(milliseconds: 600),
@@ -176,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
               const SizedBox(height: 24),
 
-              //  Search Field
+              // Search Field
               AnimatedContainer(
                 duration: const Duration(milliseconds: 500),
                 curve: Curves.easeOut,
@@ -226,7 +229,6 @@ class _HomeScreenState extends State<HomeScreen>
                   final grouped = <String, List<QueryDocumentSnapshot>>{};
                   for (var d in docs) {
                     final church = (d['church'] ?? 'Other').toString();
-
                     grouped.putIfAbsent(church, () => []).add(d);
                   }
 
@@ -311,6 +313,25 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         ),
       ),
+
+      // ✅ MOVED Donate button to correct position
+     bottomNavigationBar: Padding(
+       padding: const EdgeInsets.all(10),
+       child: ElevatedButton.icon(
+         onPressed: () {
+            Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => DonatePage()),
+      );
+    },
+    icon: const Icon(Icons.volunteer_activism, color: Colors.white),
+    label: const Text("Donate with MTN MoMo"),
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.orange,
+      minimumSize: const Size(double.infinity, 50),
+    ),
+  ),
+), 
     );
   }
 }

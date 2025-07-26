@@ -42,10 +42,12 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Welcome, ${widget.studentName ?? 'Guest'}!'),
-        backgroundColor: Colors.green[700],
-      ),
+      appBar: _currentIndex == 0
+          ? AppBar(
+              title: Text('Welcome, ${widget.studentName ?? 'Guest'}!'),
+              backgroundColor: Colors.green[700],
+            )
+          : null,
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
