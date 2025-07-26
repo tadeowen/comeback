@@ -28,34 +28,28 @@ class _VerseDisplayScreenState extends State<VerseDisplayScreen> {
   }
 
   void _loadVerses() {
-    setState(() {
-      _versesFuture = _bibleService.getChapter(widget.book, widget.chapter,
-          translation: _translation);
-    });
+    _versesFuture = _bibleService.getChapter(
+      widget.book,
+      widget.chapter,
+      translation: _translation,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text('${widget.book} ${widget.chapter}'),
-        actions: [
-          DropdownButton<String>(
-            value: _translation,
-            items: BibleService.translations.entries.map((entry) {
-              return DropdownMenuItem<String>(
-                value: entry.value,
-                child: Text(entry.key),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _translation = value!;
-                _loadVerses();
-              });
-            },
+        backgroundColor: const Color(0xFF1976D2),
+        title: Text(
+          '${widget.book} ${widget.chapter}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
-        ],
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 2,
       ),
       body: FutureBuilder<List<BibleVerse>>(
         future: _versesFuture,
@@ -63,32 +57,68 @@ class _VerseDisplayScreenState extends State<VerseDisplayScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Error: ${snapshot.error}',
+                    textAlign: TextAlign.center,
+                    style:
+                        const TextStyle(fontSize: 16, color: Colors.redAccent),
+                  ),
+                ],
+              ),
+            );
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No verses found'));
+            return const Center(
+              child: Text(
+                'No verses found',
+                style: TextStyle(fontSize: 18, color: Colors.grey),
+              ),
+            );
           }
 
           final verses = snapshot.data!;
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             itemCount: verses.length,
-            separatorBuilder: (context, index) => const Divider(height: 24),
+            separatorBuilder: (context, index) => const SizedBox(height: 16),
             itemBuilder: (context, index) {
               final verse = verses[index];
-              return RichText(
-                text: TextSpan(
-                  style:
-                      DefaultTextStyle.of(context).style.copyWith(fontSize: 16),
-                  children: [
-                    TextSpan(
-                      text: '${verse.verse} ',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
-                    TextSpan(text: verse.text),
                   ],
+                ),
+                child: RichText(
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(context).style.copyWith(
+                          fontSize: 18,
+                          height: 1.4,
+                          color: Colors.black87,
+                        ),
+                    children: [
+                      TextSpan(
+                        text: '${verse.verse} ',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1565C0),
+                        ),
+                      ),
+                      TextSpan(text: verse.text),
+                    ],
+                  ),
                 ),
               );
             },

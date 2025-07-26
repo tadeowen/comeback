@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'testament_selection.dart';
 
 void main() {
+  print("✅ Running BibleApp"); // Add this
   runApp(const BibleApp());
 }
 
@@ -11,7 +12,7 @@ class BibleApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Complete Bible App',
+      debugShowCheckedModeBanner: false, // Hides DEBUG banner
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,

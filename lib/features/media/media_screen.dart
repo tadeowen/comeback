@@ -12,6 +12,7 @@ class BibleApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Complete Bible App',
+      debugShowCheckedModeBanner: false, // ✅ This hides the DEBUG banner
       theme: ThemeData(
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
