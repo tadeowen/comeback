@@ -18,8 +18,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   final verses = [
     "“For I know the plans I have for you,” declares the Lord – Jeremiah 29:11",
     "“I can do all things through Christ who strengthens me.” – Philippians 4:13",
@@ -33,20 +32,9 @@ class _HomeScreenState extends State<HomeScreen>
   final searchCtrl = TextEditingController();
   String searchQuery = '';
 
-  late AnimationController animCtrl;
-  late Animation<double> bounce;
-
   @override
   void initState() {
     super.initState();
-    animCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 900),
-    )..repeat(reverse: true);
-    bounce = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: animCtrl, curve: Curves.easeInOut),
-    );
-
     // Start verse rotation
     _startVerseRotation();
   }
@@ -65,7 +53,6 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     verseTimer?.cancel();
-    animCtrl.dispose();
     searchCtrl.dispose();
     super.dispose();
   }
@@ -133,202 +120,254 @@ class _HomeScreenState extends State<HomeScreen>
   Widget _buildHomeContent() {
     return RefreshIndicator(
       onRefresh: () async => setState(() {}),
-      child: SingleChildScrollView(
+      child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildVerseContainer(),
-            const SizedBox(height: 24),
-
-            // Search Field
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOut,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.deepPurple.withOpacity(0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: searchCtrl,
-                onChanged: searchChanged,
-                decoration: const InputDecoration(
-                  hintText: 'Search for priests, churches...',
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                  prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Priests by Church
-            StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('leaders')
-                  .orderBy('church')
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                final docs = snapshot.data!.docs.where((d) {
-                  final name = (d['name'] ?? '').toString().toLowerCase();
-                  final church =
-                      (d['church'] ?? 'Other').toString().toLowerCase();
-                  return name.contains(searchQuery) ||
-                      church.contains(searchQuery);
-                }).toList();
-
-                final grouped = <String, List<QueryDocumentSnapshot>>{};
-                for (var d in docs) {
-                  final church = (d['church'] ?? 'Other').toString();
-                  grouped.putIfAbsent(church, () => []).add(d);
-                }
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ...grouped.entries.map((entry) {
-                      final church = entry.key;
-                      final list = entry.value;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () => openChurchDetail(church),
+        slivers: [
+          SliverAppBar(
+            title: Text("Hello, ${widget.studentName}"),
+            backgroundColor: Colors.deepPurple,
+            floating: true,
+            pinned: false,
+            snap: false,
+            actions: [
+              StreamBuilder<int>(
+                stream: notificationCount,
+                builder: (_, snapshot) {
+                  final count = snapshot.data ?? 0;
+                  return Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.notifications),
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/notifications');
+                        },
+                      ),
+                      if (count > 0)
+                        Positioned(
+                          right: 8,
+                          top: 8,
+                          child: CircleAvatar(
+                            radius: 8,
+                            backgroundColor: Colors.red,
                             child: Text(
-                              church,
+                              '$count',
                               style: const TextStyle(
-                                fontSize: 20,
+                                color: Colors.white,
+                                fontSize: 10,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.deepPurple,
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          SizedBox(
-                            height: 160,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: list.length,
-                              itemBuilder: (_, i) {
-                                final d = list[i];
-                                final img = d['imageUrl'] ??
-                                    'https://via.placeholder.com/150';
-                                final name = d['name'] ?? 'Unnamed';
-                                return GestureDetector(
-                                  onTap: () => openPriestDetail(d.id),
-                                  child: Container(
-                                    width: 120,
-                                    margin: const EdgeInsets.only(right: 12),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(16),
-                                      boxShadow: [
-                                        BoxShadow(
-                                            color: Colors.grey.shade300,
-                                            blurRadius: 6)
-                                      ],
-                                    ),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 40,
-                                          backgroundImage: NetworkImage(img),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildVerseContainer(),
+                const SizedBox(height: 24),
+
+                // Search Field
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.deepPurple.withOpacity(0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: searchCtrl,
+                    onChanged: searchChanged,
+                    decoration: const InputDecoration(
+                      hintText: 'Search for priests, churches...',
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                      prefixIcon: Icon(Icons.search, color: Colors.deepPurple),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Priests by Church
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('leaders')
+                      .orderBy('church')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final docs = snapshot.data!.docs.where((d) {
+                      final name = (d['name'] ?? '').toString().toLowerCase();
+                      final church =
+                          (d['church'] ?? 'Other').toString().toLowerCase();
+                      return name.contains(searchQuery) ||
+                          church.contains(searchQuery);
+                    }).toList();
+
+                    final grouped = <String, List<QueryDocumentSnapshot>>{};
+                    for (var d in docs) {
+                      final church = (d['church'] ?? 'Other').toString();
+                      grouped.putIfAbsent(church, () => []).add(d);
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ...grouped.entries.map((entry) {
+                          final church = entry.key;
+                          final list = entry.value;
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              GestureDetector(
+                                onTap: () => openChurchDetail(church),
+                                child: Text(
+                                  church,
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.deepPurple,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 160,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: list.length,
+                                  itemBuilder: (_, i) {
+                                    final d = list[i];
+                                    final img = d['imageUrl'] ??
+                                        'https://via.placeholder.com/150';
+                                    final name = d['name'] ?? 'Unnamed';
+                                    return GestureDetector(
+                                      onTap: () => openPriestDetail(d.id),
+                                      child: Container(
+                                        width: 120,
+                                        margin:
+                                            const EdgeInsets.only(right: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color: Colors.grey.shade300,
+                                                blurRadius: 6)
+                                          ],
                                         ),
-                                        const SizedBox(height: 8),
-                                        Text(
-                                          name,
-                                          textAlign: TextAlign.center,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 40,
+                                              backgroundImage:
+                                                  NetworkImage(img),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              name,
+                                              textAlign: TextAlign.center,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const Icon(Icons.church_outlined,
+                                                size: 18,
+                                                color: Colors.deepPurple),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                          );
+                        }).toList(),
+
+                        // Donation Card
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => DonatePage()),
+                            );
+                          },
+                          child: Card(
+                            elevation: 5,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            color: Colors.orange.shade700,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.volunteer_activism,
+                                      color: Colors.white, size: 40),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "Support Our Ministry",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
-                                        const Icon(Icons.church_outlined,
-                                            size: 18, color: Colors.deepPurple),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          "Click to donate via MTN MoMo",
+                                          style: TextStyle(
+                                            color:
+                                                Colors.white.withOpacity(0.9),
+                                            fontSize: 14,
+                                          ),
+                                        ),
                                       ],
                                     ),
                                   ),
-                                );
-                              },
+                                  const Icon(Icons.chevron_right,
+                                      color: Colors.white),
+                                ],
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 16),
-                        ],
-                      );
-                    }).toList(),
-
-                    // Donation Card
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => DonatePage()),
-                        );
-                      },
-                      child: Card(
-                        elevation: 5,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                        color: Colors.orange.shade700,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.volunteer_activism,
-                                  color: Colors.white, size: 40),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      "Support Our Ministry",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      "Click to donate via MTN MoMo",
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.9),
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right,
-                                  color: Colors.white),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                );
-              },
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                ),
+              ]),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -347,48 +386,6 @@ class _HomeScreenState extends State<HomeScreen>
 
     return Scaffold(
       backgroundColor: Colors.brown.shade50,
-      appBar: AppBar(
-        title: Text("Hello, ${widget.studentName}"),
-        backgroundColor: Colors.deepPurple,
-        actions: [
-          StreamBuilder<int>(
-            stream: notificationCount,
-            builder: (_, snapshot) {
-              final count = snapshot.data ?? 0;
-              return Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications),
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/notifications');
-                    },
-                  ),
-                  if (count > 0)
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      child: ScaleTransition(
-                        scale: bounce,
-                        child: CircleAvatar(
-                          radius: 8,
-                          backgroundColor: Colors.red,
-                          child: Text(
-                            '$count',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
       body: screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
