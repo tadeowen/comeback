@@ -25,10 +25,10 @@ class UserStatsPage extends StatelessWidget {
 
   Widget _buildAuthRequiredScreen(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.teal[50],
       appBar: AppBar(
         title: const Text("My Statistics"),
-        backgroundColor: Colors.teal[800],
+        backgroundColor: Colors.green[700],
         elevation: 0,
         centerTitle: true,
       ),

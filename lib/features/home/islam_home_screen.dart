@@ -8,6 +8,7 @@ import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:intl/intl.dart';
 import '../media/user_stats.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'donation_page.dart';
 
 class IslamHomeScreen extends StatefulWidget {
   final String? studentName;
@@ -42,6 +43,7 @@ class _IslamHomeScreenState extends State<IslamHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.teal[50],
       appBar: _currentIndex == 0
           ? AppBar(
               title: Text('Welcome, ${widget.studentName ?? 'Guest'}!'),
@@ -104,7 +106,7 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
         children: [
           // Prayer Request Statistics Section
           const Text(
-            '📊 Your Prayer Request Stats',
+            '📊Prayer Request Stats',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
@@ -114,7 +116,7 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
           const SizedBox(height: 16),
 
           // Prayer Times Section
-          Text('🕌 Prayer Times (Today)', style: theme.titleMedium),
+          Text('Swallah Times (Today)', style: theme.titleMedium),
           const SizedBox(height: 8),
           Card(
             color: Colors.green[50],
@@ -143,7 +145,7 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               hintText: 'Search Imams by name...',
               prefixIcon: const Icon(Icons.search),
               border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
               filled: true,
               fillColor: Colors.grey[100],
             ),
@@ -282,6 +284,59 @@ class _FeaturedImamsHomeState extends State<FeaturedImamsHome> {
               );
             },
           ),
+          const SizedBox(height: 24),
+
+          // Donation Card
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => DonatePage()),
+              );
+            },
+            child: Card(
+              elevation: 5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: Colors.orange.shade700,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    const Icon(Icons.volunteer_activism,
+                        color: Colors.white, size: 40),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Support Our Mosque",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Click to donate via MTN MoMo",
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: Colors.white),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
         ],
       ),
     );
