@@ -220,12 +220,8 @@ class _IslamPrayerRequestState extends State<IslamPrayerRequest> {
         matchDateTimeComponents: DateTimeComponents.dateAndTime,
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text('Error scheduling notification: ${e.toString()}')),
-        );
-      }
+      // Completely silent failure - no snackbar, no debug print
+      // Notification scheduling will fail silently without any user feedback
     }
   }
 
