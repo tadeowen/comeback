@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeNotifier>(
       builder: (context, themeNotifier, _) {
         return MaterialApp(
-          title: 'Church App',
+          title: 'Comeback',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,
           darkTheme: ThemeData.dark(),
@@ -114,9 +114,8 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'assets/images/comeback.png',
-              width: 150,
-              height: 150,
+              'assets/images/launch_image.jpg',
+              fit: BoxFit.cover,
             ),
             const SizedBox(height: 20),
             const CircularProgressIndicator(),
