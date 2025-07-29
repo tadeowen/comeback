@@ -9,6 +9,7 @@ import '../chat/chat_screen.dart';
 import '../media/media_screen.dart';
 import '../profile/profile_screen.dart';
 import '../prayer/prayer_screen.dart';
+import 'notifications_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String studentName;
@@ -139,7 +140,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       IconButton(
                         icon: const Icon(Icons.notifications),
                         onPressed: () {
-                          Navigator.pushNamed(context, '/notifications');
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const NotificationsScreen(),
+                            ),
+                          );
                         },
                       ),
                       if (count > 0)
