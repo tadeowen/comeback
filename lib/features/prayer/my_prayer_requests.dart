@@ -234,23 +234,41 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
                             ),
                           ),
                         ),
-                      if (status == 'resolved' && !hasRated && imamId != null)
+                      if (status == 'resolved')
                         Padding(
                           padding: const EdgeInsets.only(top: 16),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  _showRatingDialog(imamId, doc.reference),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.teal[700],
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (!hasRated && imamId != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ElevatedButton(
+                                    onPressed: () => _showRatingDialog(
+                                        imamId, doc.reference),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.teal[700],
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                    child: const Text("Rate Imam"),
+                                  ),
                                 ),
+                              ElevatedButton(
+                                onPressed: () =>
+                                    _confirmDeleteRequest(doc.reference),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red[700],
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: const Text("Delete"),
                               ),
-                              child: const Text("Rate Imam"),
-                            ),
+                            ],
                           ),
                         ),
                     ],
@@ -262,6 +280,44 @@ class _MyPrayerRequestsScreenState extends State<MyPrayerRequestsScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _confirmDeleteRequest(DocumentReference requestRef) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Request"),
+        content:
+            const Text("Are you sure you want to delete this prayer request?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      try {
+        await requestRef.delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Request deleted successfully")),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error deleting request: $e")),
+          );
+        }
+      }
+    }
   }
 
   void _showRatingDialog(String imamId, DocumentReference requestRef) async {
